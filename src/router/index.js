@@ -2,7 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import HomeView from '../views/HomeView.vue'
 import UnauthorizedView from '../views/UnauthorizedView.vue'
+import CreateAccountView from '@/views/CreateAccountView.vue'
 import { supabase } from '../clients/supabase.js'
+import HeroPage from '@/views/HeroPage.vue'
 
 let localUser
 
@@ -16,9 +18,19 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/hero',
+      name: 'Hero',
+      component: HeroPage,
+    },
+    {
       path: '/login',
       name: 'Login',
       component: LoginView,
+    },
+    {
+      path: '/createaccount',
+      name: 'CreateAccount',
+      component: CreateAccountView,
     },
     {
       path: '/unauthorized',

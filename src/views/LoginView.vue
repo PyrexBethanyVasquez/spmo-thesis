@@ -23,20 +23,47 @@
       <div class="divider"><span>or</span></div>
 
       <!-- Signup -->
-      <form @submit.prevent="createaccount" class="auth-form">
-        <input type="text" placeholder="Username" v-model="name" />
-        <input type="email" placeholder="Email" v-model="email" />
-        <input type="password" placeholder="Password" v-model="password" />
-        <button type="submit" class="signup-btn">Create Account</button>
-      </form>
+      <RouterLink to="/createaccount">
+        <button class="signup-btn">Create Account</button>
+      </RouterLink>
 
       <!-- Logout -->
-      <div class="logout-section">
+      <!-- <div class="logout-section">
         <button @click="logout" class="logout-btn">Logout</button>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
+
+<script setup>
+import { ref } from 'vue'
+import { supabase } from '../clients/supabase.js'
+
+let email = ref('')
+let password = ref('')
+
+async function login() {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.value,
+    password: password.value,
+  })
+
+  if (error) {
+    console.log('Error logging in:', error.message)
+  } else {
+    console.log('Logged in successfully:', data)
+  }
+}
+
+// function logout() {
+//   const { error } = supabase.auth.signOut()
+//   if (error) {
+//     console.log('Error logging out:', error.message)
+//   } else {
+//     console.log('Logged out successfully')
+//   }
+// }
+</script>
 
 <style scoped>
 /* Background */
@@ -155,52 +182,3 @@
   margin-left: 0.75em;
 }
 </style>
-
-<script setup>
-import { ref } from 'vue'
-import { supabase } from '../clients/supabase.js'
-
-let email = ref('')
-let password = ref('')
-let name = ref('')
-
-async function createaccount() {
-  const { data, error } = await supabase.auth.signUp({
-    email: email.value,
-    password: password.value,
-    options: {
-      data: {
-        name: name.value,
-      },
-    },
-  })
-
-  if (error) {
-    console.log('Error creating account:', error.message)
-  } else {
-    console.log('Account created successfully:', data)
-  }
-}
-
-async function login() {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: email.value,
-    password: password.value,
-  })
-
-  if (error) {
-    console.log('Error logging in:', error.message)
-  } else {
-    console.log('Logged in successfully:', data)
-  }
-}
-
-function logout() {
-  const { error } = supabase.auth.signOut()
-  if (error) {
-    console.log('Error logging out:', error.message)
-  } else {
-    console.log('Logged out successfully')
-  }
-}
-</script>
