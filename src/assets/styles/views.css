@@ -1,0 +1,145 @@
+.admin-dashboard {
+  background: #ffffff;
+  color: #333;
+  padding: 28px;
+  border-radius: 16px;
+  margin-top: 30px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dashboard-title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #222;
+  text-align: center;
+}
+
+.dashboard-subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 24px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.dashboard-card {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.25);
+}
+
+.dashboard-card ion-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.dashboard-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+}
+
+.dashboard-card p {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.user-dashboard {
+  background: #ffffff;
+  color: #333;
+  padding: 28px;
+  border-radius: 16px;
+  margin-top: 30px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.scanner-card {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  padding: 30px 20px;
+  border-radius: 14px;
+  margin-top: 20px;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.scanner-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(5, 95, 70, 0.3);
+}
+
+.scanner-card ion-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.scanner-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.scanner-card p {
+  font-size: 0.95rem;
+  opacity: 0.95;
+  margin-bottom: 16px;
+}
+
+.scanner-card button {
+  padding: 10px 18px;
+  border: none;
+  background: #fff;
+  color: #059669;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.scanner-card button:hover {
+  background: #e6f9f1;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px; /* pill shape */
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background: #2563eb; /* default blue */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Role-specific colors */
+.role-badge.admin {
+  background: #dc2626; /* red for admin */
+}
+
+.role-badge.user {
+  background: #059669; /* green for user/staff */
+}
