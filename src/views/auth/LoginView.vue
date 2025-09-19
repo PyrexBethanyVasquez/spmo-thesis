@@ -38,7 +38,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { supabase } from '../clients/supabase.js'
+import { supabase } from '../../clients/supabase.js'
 
 let email = ref('')
 let password = ref('')

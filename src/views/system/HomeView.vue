@@ -17,6 +17,11 @@
       <p class="dashboard-subtitle">Welcome back! Choose an action below:</p>
 
       <div class="dashboard-grid">
+        <div class="dashboard-card" @click="systemSettings">
+          <ion-icon name="settings-outline"></ion-icon>
+          <h3>Item Inventory</h3>
+          <p>Manage and track items</p>
+        </div>
         <div class="dashboard-card" @click="manageUsers">
           <ion-icon name="people-circle-outline"></ion-icon>
           <h3>Manage Users</h3>
@@ -27,12 +32,6 @@
           <ion-icon name="bar-chart-outline"></ion-icon>
           <h3>View Reports</h3>
           <p>Check analytics & statistics</p>
-        </div>
-
-        <div class="dashboard-card" @click="systemSettings">
-          <ion-icon name="settings-outline"></ion-icon>
-          <h3>Item Inventory</h3>
-          <p>Manage and track items</p>
         </div>
       </div>
     </div>
@@ -54,7 +53,7 @@
 
 <script>
 import router from '@/router/index.js'
-import { supabase } from '../clients/supabase.js'
+import { supabase } from '../../clients/supabase.js'
 
 export default {
   name: 'HomeView',
@@ -105,8 +104,11 @@ export default {
         console.log('Error logging out:', error.message)
       } else {
         console.log('Logged out successfully')
-        router.push('/login')
+        router.push('/')
       }
+    },
+    systemSettings() {
+      this.$router.push('/items')
     },
   },
 }

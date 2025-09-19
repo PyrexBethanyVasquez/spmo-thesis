@@ -1,10 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '../views/LoginView.vue'
-import HomeView from '../views/HomeView.vue'
-import UnauthorizedView from '../views/UnauthorizedView.vue'
-import CreateAccountView from '@/views/CreateAccountView.vue'
+import LoginView from '../views/auth/LoginView.vue'
+import HomeView from '../views/system/HomeView.vue'
+import UnauthorizedView from '../views/errors/UnauthorizedView.vue'
+import CreateAccountView from '@/views/auth/CreateAccountView.vue'
 import { supabase } from '../clients/supabase.js'
-import HeroPage from '@/views/HeroPage.vue'
+import HeroPage from '@/views/system/HeroPage.vue'
+import ItemInventory from '@/views/system/ItemInventory.vue'
 
 let localUser
 
@@ -23,7 +24,7 @@ const router = createRouter({
       component: HeroPage,
     },
     {
-      path: '/login',
+      path: '/',
       name: 'Login',
       component: LoginView,
     },
@@ -36,6 +37,12 @@ const router = createRouter({
       path: '/unauthorized',
       name: 'Unauthorized',
       component: UnauthorizedView,
+    },
+
+    {
+      path: '/items',
+      name: 'ItemInventory',
+      component: ItemInventory,
     },
   ],
 })

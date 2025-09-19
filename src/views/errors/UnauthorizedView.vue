@@ -2,7 +2,7 @@
   <div class="unauthorized-view">
     <h1>401 - Unauthorized</h1>
     <p>You do not have permission to access this page.</p>
-    <router-link to="/login">Go to Login</router-link>
+    <router-link to="/">Go to Login</router-link>
   </div>
 </template>
 
