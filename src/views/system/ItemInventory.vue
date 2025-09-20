@@ -59,13 +59,28 @@
     <div v-if="editingItem" class="modal">
       <div class="modal-content">
         <h3>Edit Item</h3>
+
+        <label>Item Name</label>
         <input v-model="editingItem.name" placeholder="Item Name" required />
+
+        <label>Property No</label>
         <input v-model="editingItem.property_no" placeholder="Property No" />
+
+        <label>Location</label>
         <input v-model="editingItem.location" placeholder="Location" />
+
+        <label>Status</label>
         <input v-model="editingItem.status" placeholder="Status" />
+
+        <label>Serial No</label>
         <input v-model="editingItem.serial_no" placeholder="Serial No" />
+
+        <label>Model/Brand</label>
         <input v-model="editingItem.model_brand" placeholder="Model/Brand" />
+
+        <label>Date Acquired</label>
         <input v-model="editingItem.date_acquired" type="date" placeholder="Date Acquired" />
+
         <div style="margin-top: 12px; display: flex; justify-content: flex-end">
           <button @click="updateItem">Save</button>
           <button @click="cancelEdit">Cancel</button>
@@ -201,9 +216,7 @@ export default {
       this.editingItem = null
     },
 
-    // === Sticker modal methods ===
     openStickerModal(item) {
-      // make sure we pass the item with qrCode (from this.items)
       this.stickerItem = item
     },
 
@@ -212,258 +225,8 @@ export default {
     },
 
     printSticker() {
-      // print only sticker via @media print rules in CSS
       window.print()
     },
   },
 }
 </script>
-<style scoped>
-.items-page {
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 1.5rem;
-  background: #f9fafb;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  font-family: 'Segoe UI', Roboto, sans-serif;
-}
-
-.items-page h2 {
-  font-size: 1.8rem;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-}
-
-.items-page p {
-  color: #475569;
-  margin-bottom: 1rem;
-}
-
-/* Form */
-.item-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.item-form input {
-  padding: 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.item-form button {
-  grid-column: 1 / -1;
-  padding: 10px 15px;
-  background: #2563eb;
-  border: none;
-  color: white;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: 0.3s ease;
-  justify-self: center;
-  width: 200px;
-}
-
-.item-form button:hover {
-  background: #1d4ed8;
-}
-
-/* Table */
-.items-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1.5rem;
-  background: white;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.items-table th,
-.items-table td {
-  padding: 12px 15px;
-  text-align: left;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.items-table th {
-  background: #f1f5f9;
-  font-weight: bold;
-  color: #334155;
-}
-
-.items-table tr {
-  background: #000000;
-}
-
-.items-table tr:hover {
-  background: #202020;
-}
-
-/* Action buttons */
-.items-table button {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  margin-right: 5px;
-}
-
-.items-table button:first-child {
-  background: #10b981;
-  color: white;
-}
-
-.items-table button:first-child:hover {
-  background: #059669;
-}
-
-.items-table button:last-child {
-  background: #ef4444;
-  color: white;
-}
-
-.items-table button:last-child:hover {
-  background: #dc2626;
-}
-
-/* Modal */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-content {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 10px;
-  width: 400px;
-  max-width: 90%;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-}
-
-.modal-content h3 {
-  margin-bottom: 1rem;
-  color: #1e293b;
-}
-
-.modal-content input {
-  width: 100%;
-  margin-bottom: 0.8rem;
-  padding: 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-}
-
-.modal-content button {
-  margin-right: 8px;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.modal-content button:first-of-type {
-  background: #3b82f6;
-  color: white;
-}
-
-.modal-content button:first-of-type:hover {
-  background: #2563eb;
-}
-
-.modal-content button:last-of-type {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-/* Sticker Modal */
-.sticker-modal {
-  width: 300px;
-  text-align: center;
-}
-
-.sticker {
-  border: 1px solid #000;
-  padding: 10px;
-  margin: 1rem 0;
-  text-align: center;
-}
-
-.sticker img {
-  width: 100px;
-  height: 100px;
-  margin-bottom: 8px;
-}
-
-.sticker-details {
-  font-size: 12px;
-  text-align: left;
-}
-
-.sticker-details p {
-  margin: 2px 0;
-}
-
-.modal-actions {
-  margin-top: 1rem;
-  text-align: right;
-}
-
-.modal-actions button:first-of-type {
-  background: #10b981;
-  color: white;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  margin-right: 8px;
-  cursor: pointer;
-}
-
-.modal-actions button:first-of-type:hover {
-  background: #059669;
-}
-
-.modal-actions button:last-of-type {
-  background: #e5e7eb;
-  color: #374151;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.modal-actions button:last-of-type:hover {
-  background: #d1d5db;
-}
-
-/* Make print only show sticker */
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  .sticker,
-  .sticker * {
-    visibility: visible;
-  }
-  .sticker {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-}
-</style>
