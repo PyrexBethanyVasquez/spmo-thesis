@@ -1,10 +1,16 @@
 <template>
   <div class="items-page">
-    <h2>Item Inventory</h2>
-    <p>Manage and track items</p>
+    <div class="page-header">
+      <h2>Item Inventory</h2>
+      <button class="add-item-btn" @click="showAddForm = !showAddForm">
+        <ion-icon name="add-circle-outline"></ion-icon>
+        Add Item
+      </button>
+    </div>
+    <p>Add and Manage Items</p>
 
-    <!-- Add Item Form -->
-    <form class="item-form" @submit.prevent="addItem">
+    <!-- Add Item Form (toggle) -->
+    <form v-if="showAddForm" class="item-form" @submit.prevent="addItem">
       <input v-model="newItem.name" placeholder="Item Name" required />
       <input v-model="newItem.property_no" placeholder="Property No" />
       <input v-model="newItem.location" placeholder="Location" />
@@ -12,7 +18,10 @@
       <input v-model="newItem.serial_no" placeholder="Serial No" />
       <input v-model="newItem.model_brand" placeholder="Model/Brand" />
       <input v-model="newItem.date_acquired" type="date" placeholder="Date Acquired" />
-      <button type="submit">Add Item</button>
+      <div class="form-actions">
+        <button type="submit" class="save-btn">Save Item</button>
+        <button type="button" class="cancel-btn" @click="cancelAdd">Cancel</button>
+      </div>
     </form>
 
     <hr />
@@ -59,25 +68,19 @@
     <div v-if="editingItem" class="modal">
       <div class="modal-content">
         <h3>Edit Item</h3>
-
+        <!-- same fields as before -->
         <label>Item Name</label>
         <input v-model="editingItem.name" placeholder="Item Name" required />
-
         <label>Property No</label>
         <input v-model="editingItem.property_no" placeholder="Property No" />
-
         <label>Location</label>
         <input v-model="editingItem.location" placeholder="Location" />
-
         <label>Status</label>
         <input v-model="editingItem.status" placeholder="Status" />
-
         <label>Serial No</label>
         <input v-model="editingItem.serial_no" placeholder="Serial No" />
-
         <label>Model/Brand</label>
         <input v-model="editingItem.model_brand" placeholder="Model/Brand" />
-
         <label>Date Acquired</label>
         <input v-model="editingItem.date_acquired" type="date" placeholder="Date Acquired" />
 
@@ -100,6 +103,9 @@
             <p><strong>Property No:</strong> {{ stickerItem.property_no }}</p>
             <p><strong>Serial No:</strong> {{ stickerItem.serial_no }}</p>
             <p><strong>Location:</strong> {{ stickerItem.location }}</p>
+            <p><strong>Status:</strong> {{ stickerItem.status }}</p>
+            <p><strong>Model/Brand:</strong> {{ stickerItem.model_brand }}</p>
+            <p><strong>Date Acquired:</strong> {{ stickerItem.date_acquired }}</p>
           </div>
         </div>
 
@@ -131,7 +137,8 @@ export default {
         date_acquired: '',
       },
       editingItem: null,
-      stickerItem: null, // <<-- make sure this exists
+      stickerItem: null,
+      showAddForm: false, // <<-- controls visibility
     }
   },
   async mounted() {
@@ -149,7 +156,6 @@ export default {
         return
       }
 
-      // generate QR for each item safely
       this.items = await Promise.all(
         data.map(async (item) => {
           try {
@@ -182,6 +188,20 @@ export default {
           model_brand: '',
           date_acquired: '',
         }
+        this.showForm = false // hide form after add
+      }
+    },
+
+    cancelAdd() {
+      this.showAddForm = false
+      this.newItem = {
+        name: '',
+        property_no: '',
+        location: '',
+        status: '',
+        serial_no: '',
+        model_brand: '',
+        date_acquired: '',
       }
     },
 
@@ -192,12 +212,10 @@ export default {
     async updateItem() {
       const itemData = { ...this.editingItem }
       delete itemData.qrCode
-
       const { error } = await supabase
         .from('items')
         .update(itemData)
         .eq('item_no', this.editingItem.item_no)
-
       if (error) {
         alert('Error updating item: ' + error.message)
       } else {

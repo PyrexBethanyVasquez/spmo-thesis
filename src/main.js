@@ -8,6 +8,12 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+import { addIcons } from 'ionicons'
+import { searchOutline } from 'ionicons/icons'
+
+addIcons({
+  'search-outline': searchOutline,
+})
 
 const app = createApp(App).use(router)
 

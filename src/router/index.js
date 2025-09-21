@@ -43,6 +43,7 @@ const router = createRouter({
       path: '/items',
       name: 'ItemInventory',
       component: ItemInventory,
+      meta: { requiresAuth: true },
     },
   ],
 })

@@ -16,6 +16,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.1",
     "@supabase/supabase-js": "^2.57.4",
+    "ionicons": "^8.0.13",
     "pinia": "^3.0.3",
     "qrcode": "^1.5.4",
     "vue": "^3.5.18",
