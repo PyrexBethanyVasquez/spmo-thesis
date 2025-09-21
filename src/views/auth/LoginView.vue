@@ -85,7 +85,7 @@ async function login() {
   justify-content: center;
 
   /* Green gradient background */
-  background: linear-gradient(135deg, #1b1f3a, #035b01);
+  background: linear-gradient(135deg, #675c14, #035b01);
 }
 
 .admin-auth-card {

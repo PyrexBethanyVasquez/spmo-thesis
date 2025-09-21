@@ -231,7 +231,6 @@ export default {
   min-height: 100%;
   background: #f8fafc;
 }
-
 /* Sidebar */
 .sidebar {
   width: 250px;
@@ -241,6 +240,18 @@ export default {
   flex-direction: column;
   justify-content: space-between;
   padding: 1rem;
+  transition:
+    transform 0.3s ease-in-out,
+    width 0.3s ease;
+
+  /* ✅ Ensure visible by default */
+  transform: translateX(0);
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  padding: 2rem;
 }
 
 .sidebar-header {
@@ -309,12 +320,6 @@ export default {
 }
 .logout-btn:hover {
   background: #c53030;
-}
-
-/* Main Content */
-.main-content {
-  flex: 1;
-  padding: 2rem;
 }
 
 /* Search Bar */
@@ -560,5 +565,86 @@ export default {
   font-size: 1.25rem;
   font-weight: 700;
   color: #2d3748;
+}
+
+/* ✅ Tablet adjustment */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+  }
+  .main-content {
+    padding: 1.5rem;
+  }
+}
+
+/* ✅ Mobile: make sidebar a drawer */
+@media (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 1000;
+    transform: translateX(-100%); /* hidden by default */
+  }
+
+  .sidebar.open {
+    transform: translateX(0); /* slide in when toggled */
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  /* Mobile header + hamburger */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1b1f3a;
+    color: #fff;
+    padding: 0.75rem 1rem;
+  }
+
+  .hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .hamburger span {
+    display: block;
+    height: 3px;
+    width: 100%;
+    background: white;
+    border-radius: 2px;
+  }
+}
+
+/* ✅ Small Mobile tweaks */
+@media (max-width: 480px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .search-bar {
+    width: 100%;
+  }
 }
 </style>
