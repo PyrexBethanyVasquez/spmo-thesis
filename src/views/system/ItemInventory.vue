@@ -11,13 +11,41 @@
 
     <!-- Add Item Form (toggle) -->
     <form v-if="showAddForm" class="item-form" @submit.prevent="addItem">
-      <input v-model="newItem.name" placeholder="Item Name" required />
-      <input v-model="newItem.property_no" placeholder="Property No" />
-      <input v-model="newItem.location" placeholder="Location" />
-      <input v-model="newItem.status" placeholder="Status" />
-      <input v-model="newItem.serial_no" placeholder="Serial No" />
-      <input v-model="newItem.model_brand" placeholder="Model/Brand" />
-      <input v-model="newItem.date_acquired" type="date" placeholder="Date Acquired" />
+      <div>
+        <label for="name">Item Name</label>
+        <input id="name" v-model="newItem.name" placeholder="Enter item name" required />
+      </div>
+
+      <div>
+        <label for="property_no">Property No</label>
+        <input id="property_no" v-model="newItem.property_no" placeholder="Enter property no" />
+      </div>
+
+      <div>
+        <label for="location">Location</label>
+        <input id="location" v-model="newItem.location" placeholder="Enter location" />
+      </div>
+
+      <div>
+        <label for="status">Status</label>
+        <input id="status" v-model="newItem.status" placeholder="Enter status" />
+      </div>
+
+      <div>
+        <label for="serial_no">Serial No</label>
+        <input id="serial_no" v-model="newItem.serial_no" placeholder="Enter serial no" />
+      </div>
+
+      <div>
+        <label for="model_brand">Model/Brand</label>
+        <input id="model_brand" v-model="newItem.model_brand" placeholder="Enter model/brand" />
+      </div>
+
+      <div>
+        <label for="date_acquired">Date Acquired</label>
+        <input id="date_acquired" v-model="newItem.date_acquired" type="date" />
+      </div>
+
       <div class="form-actions">
         <button type="submit" class="save-btn">Save Item</button>
         <button type="button" class="cancel-btn" @click="cancelAdd">Cancel</button>
@@ -39,6 +67,7 @@
             <th>Serial No</th>
             <th>Model/Brand</th>
             <th>Date Acquired</th>
+            <th>Item Sticker</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -55,13 +84,26 @@
             <td>{{ item.model_brand }}</td>
             <td>{{ item.date_acquired }}</td>
             <td>
+              <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
+            </td>
+            <td>
               <button @click="editItem(item)">Edit</button>
-              <button @click="deleteItem(item.item_no)">Delete</button>
-              <button @click="openStickerModal(item)">Print Sticker</button>
+              <button @click="askDelete(item.item_no)">Delete</button>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div v-if="showConfirm" class="modal-overlay">
+      <div class="modal-card">
+        <h3>Confirm Delete</h3>
+        <p>Are you sure you want to delete this item?</p>
+        <div class="modal-actions">
+          <button class="delete-btn" @click="confirmDelete">Yes, Delete</button>
+          <button class="cancel-btn" @click="cancelDelete">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <!-- Edit Item Modal -->
@@ -127,6 +169,8 @@ export default {
   data() {
     return {
       items: [],
+      showConfirm: false,
+      itemToDelete: null,
       newItem: {
         name: '',
         property_no: '',
@@ -224,10 +268,29 @@ export default {
       }
     },
 
-    async deleteItem(id) {
-      const { error } = await supabase.from('items').delete().eq('item_no', id)
-      if (error) alert('Error deleting item: ' + error.message)
-      else await this.fetchItems()
+    askDelete(itemId) {
+      this.itemToDelete = itemId
+      this.showConfirm = true
+    },
+
+    async confirmDelete() {
+      if (!this.itemToDelete) return
+
+      const { error } = await supabase.from('items').delete().eq('item_no', this.itemToDelete)
+
+      if (error) {
+        alert('Error deleting item: ' + error.message)
+      } else {
+        await this.fetchItems()
+      }
+
+      this.showConfirm = false
+      this.itemToDelete = null
+    },
+
+    cancelDelete() {
+      this.showConfirm = false
+      this.itemToDelete = null
     },
 
     cancelEdit() {

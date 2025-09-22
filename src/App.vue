@@ -316,7 +316,7 @@ nav a.router-link-active::after {
 .content {
   flex: 1;
   width: 100%;
-  padding: 2em;
+  padding: 0;
   box-sizing: border-box;
   background: linear-gradient(135deg, #675c14, #035b01);
 }

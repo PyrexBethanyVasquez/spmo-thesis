@@ -7,16 +7,6 @@
         <span class="role-badge" :class="role">{{ role }}</span>
       </div>
 
-      <!-- User Navigation -->
-      <nav v-if="role === 'user'" class="sidebar-nav">
-        <ul>
-          <li @click="startScanning">
-            <ion-icon name="qr-code-outline"></ion-icon>
-            <span>Scan Items</span>
-          </li>
-        </ul>
-      </nav>
-
       <div class="sidebar-footer">
         <button @click="logout" class="logout-btn">
           <ion-icon name="log-out-outline"></ion-icon>
@@ -229,12 +219,13 @@ export default {
 .dashboard-layout {
   display: flex;
   min-height: 100%;
+  min-width: none;
   background: #f8fafc;
 }
 /* Sidebar */
 .sidebar {
   width: 250px;
-  background: linear-gradient(135deg, #1b1f3a, #035b01);
+  background: linear-gradient(120deg, #504c2c, #035b01);
   color: #e2e8f0;
   display: flex;
   flex-direction: column;
