@@ -1,5 +1,5 @@
 <template>
-  <div class="auth-wrapper">
+  <div class="auth-wrapper" v-if="role === 'admin'">
     <div class="auth-card">
       <form @submit.prevent="createaccount" class="auth-form">
         <input type="text" placeholder="Username" v-model="name" />
@@ -9,23 +9,55 @@
       </form>
     </div>
   </div>
+  <div v-else>
+    <p>{{ unauthorizedMessage }}</p>
+  </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { supabase } from '../../clients/supabase.js'
+import router from '@/router/index.js'
 
 let email = ref('')
 let password = ref('')
 let name = ref('')
+let role = ref('user')
+
+onMounted(async () => {
+  // get current logged in user
+  const { data } = await supabase.auth.getUser()
+  const user = data.user
+
+  if (user) {
+    const { data: profile, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (error) {
+      console.error('Error fetching role:', error.message)
+      role.value = 'user'
+    } else {
+      role.value = profile?.role || 'user'
+    }
+  }
+})
 
 async function createaccount() {
+  if (role.value !== 'admin') {
+    console.log('Unauthorized attempt to create account')
+    return
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email: email.value,
     password: password.value,
     options: {
       data: {
-        name: name.value,
+        full_name: name.value,
+        role: 'user',
       },
     },
   })
@@ -34,6 +66,7 @@ async function createaccount() {
     console.log('Error creating account:', error.message)
   } else {
     console.log('Account created successfully:', data)
+    router.push('/home')
   }
 }
 </script>

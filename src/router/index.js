@@ -7,8 +7,6 @@ import { supabase } from '../clients/supabase.js'
 import HeroPage from '@/views/system/HeroPage.vue'
 import ItemInventory from '@/views/system/ItemInventory.vue'
 
-let localUser
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -32,6 +30,7 @@ const router = createRouter({
       path: '/createaccount',
       name: 'CreateAccount',
       component: CreateAccountView,
+      meta: { requiresAuth: true, role: ['admin'] },
     },
     {
       path: '/unauthorized',
@@ -43,23 +42,33 @@ const router = createRouter({
       path: '/items',
       name: 'ItemInventory',
       component: ItemInventory,
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, role: ['admin'] },
     },
   ],
 })
 
-async function getUser(next) {
-  localUser = await supabase.auth.getSession()
-  if (localUser.data.session == null) {
-    next('/unauthorized')
-  } else {
-    next()
+async function getUser(next, to) {
+  const { data } = await supabase.auth.getUser()
+  const user = data.user
+
+  if (!user) {
+    return next('/unauthorized')
   }
+
+  // role from user_metadata
+  const role = user.user_metadata?.role || 'user'
+
+  // if route has role restrictions
+  if (to.meta.roles && !to.meta.roles.includes(role)) {
+    return next('/unauthorized')
+  }
+
+  next()
 }
 
 router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth) {
-    getUser(next)
+    getUser(next, to)
   } else {
     next()
   }

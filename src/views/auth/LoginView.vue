@@ -13,7 +13,9 @@
       <p class="admin-auth-subtitle">Sign in to access the dashboard</p>
 
       <!-- Error Message -->
-      <p v-if="authError" class="auth-error">{{ authError }}</p>
+      <transition name="fade">
+        <p v-if="authError" class="auth-error">{{ authError }}</p>
+      </transition>
 
       <!-- Login -->
       <form @submit.prevent="login" class="admin-auth-form">
@@ -71,7 +73,20 @@ async function login() {
     authError.value = 'Invalid email or password'
     console.error('Error logging in:', error.message)
   } else {
-    console.log('Logged in successfully:', data)
+    const user = data.user
+
+    // Check if user is admin
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
+
+    if (!profile || profile.role !== 'admin') {
+      authError.value = 'Access denied: Not an admin'
+      await supabase.auth.signOut()
+
+      setTimeout(() => {
+        authError.value = null
+      }, 2000)
+      return
+    }
     router.push('/home')
   }
 }
@@ -196,5 +211,14 @@ async function login() {
 .small-text {
   font-size: 0.8rem;
   color: #d8f3dc;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

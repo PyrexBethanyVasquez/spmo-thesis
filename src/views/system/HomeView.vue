@@ -7,6 +7,39 @@
         <span class="role-badge" :class="role">{{ role }}</span>
       </div>
 
+      <nav class="sidebar-nav">
+        <ul>
+          <li @click="viewReports">
+            <ion-icon name="document-text-outline"></ion-icon>
+            View Reports
+          </li>
+          <li @click="departments">
+            <ion-icon name="square-outline"></ion-icon>
+            View Departments
+          </li>
+
+          <li @click="toggleDropdown">
+            <ion-icon name="people-outline"></ion-icon>
+            Manage Users
+            <ion-icon
+              :name="dropdownOpen ? 'chevron-up-outline' : 'chevron-down-outline'"
+              class="chevron"
+            ></ion-icon>
+          </li>
+
+          <!-- Dropdown List -->
+          <ul v-if="dropdownOpen" class="submenu">
+            <li @click="viewAllUsers">
+              <ion-icon name="list-outline"></ion-icon>
+              All Users
+            </li>
+            <li @click="createUser">
+              <ion-icon name="shield-checkmark-outline"></ion-icon>
+              Create Account
+            </li>
+          </ul>
+        </ul>
+      </nav>
       <div class="sidebar-footer">
         <button @click="logout" class="logout-btn">
           <ion-icon name="log-out-outline"></ion-icon>
@@ -114,6 +147,7 @@ export default {
       searchQuery: '',
       totalItems: 0,
       searchResults: [],
+      dropdownOpen: false,
     }
   },
 
@@ -159,6 +193,9 @@ export default {
     }
   },
   methods: {
+    toggleDropdown() {
+      this.dropdownOpen = !this.dropdownOpen
+    },
     async fetchTotalItems() {
       const { count, error } = await supabase
         .from('items')
@@ -198,17 +235,17 @@ export default {
         router.push('/')
       })
     },
-    systemSettings() {
+    departments() {
       this.$router.push('/items')
     },
-    manageUsers() {
-      this.$router.push('/home')
+    createUser() {
+      this.$router.push('/createaccount')
     },
     viewReports() {
       this.$router.push('/reports')
     },
-    startScanning() {
-      this.$router.push('/scanner') //tba
+    viewAllUsers() {
+      this.$router.push('/users-list') //tba
     },
   },
 }
@@ -637,5 +674,19 @@ export default {
   .search-bar {
     width: 100%;
   }
+}
+
+.submenu {
+  list-style: none;
+  padding-left: 20px;
+}
+.submenu li {
+  cursor: pointer;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+}
+.chevron {
+  margin-left: auto;
 }
 </style>
