@@ -6,6 +6,8 @@ import CreateAccountView from '@/views/auth/CreateAccountView.vue'
 import { supabase } from '../clients/supabase.js'
 import HeroPage from '@/views/system/HeroPage.vue'
 import ItemInventory from '@/views/system/ItemInventory.vue'
+import ItemLists from '@/views/system/ItemLists.vue'
+import Reports from '@/views/system/reports/ViewReports.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -44,6 +46,23 @@ const router = createRouter({
       component: ItemInventory,
       meta: { requiresAuth: true, role: ['admin'] },
     },
+
+    {
+      path: '/item-lists',
+      name: 'ItemLists',
+      component: ItemLists,
+      meta: { requiresAuth: true, role: ['admin'] },
+    },
+
+    {
+      path: '/reports',
+      name: 'Reports',
+      component: Reports,
+      meta: { requiresAuth: true, role: ['admin'] },
+    },
+    //add item lists route here
+    //add reports route here
+    //add transactions route here
   ],
 })
 

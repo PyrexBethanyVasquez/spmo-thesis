@@ -2,75 +2,17 @@
   <div class="items-page">
     <div class="page-header">
       <h2>Item Inventory</h2>
-      <button class="add-item-btn" @click="showAddForm = !showAddForm">
-        <ion-icon name="add-circle-outline"></ion-icon>
-        Add Item
-      </button>
+      <router-link to="/reports">
+        <button class="reports-btn"><i class="fas fa-file-alt"></i>Go to Reports</button>
+      </router-link>
     </div>
-    <p>Add and Manage Items</p>
-
-    <!-- Add Item Form (toggle) -->
-    <form v-if="showAddForm" class="item-form" @submit.prevent="addItem">
-      <div>
-        <label for="name">Item Name</label>
-        <input id="name" v-model="newItem.name" placeholder="Enter item name" required />
-      </div>
-
-      <div>
-        <label for="property_no">Property No</label>
-        <input id="property_no" v-model="newItem.property_no" placeholder="Enter property no" />
-      </div>
-
-      <div>
-        <label for="location">Location</label>
-        <input id="location" v-model="newItem.location" placeholder="Enter location" />
-      </div>
-
-      <div>
-        <label for="status">Status</label>
-        <input id="status" v-model="newItem.status" placeholder="Enter status" />
-      </div>
-
-      <div>
-        <label for="serial_no">Serial No</label>
-        <input id="serial_no" v-model="newItem.serial_no" placeholder="Enter serial no" />
-      </div>
-
-      <div>
-        <label for="model_brand">Model/Brand</label>
-        <input id="model_brand" v-model="newItem.model_brand" placeholder="Enter model/brand" />
-      </div>
-
-      <div>
-        <label for="date_acquired">Date Acquired</label>
-        <input id="date_acquired" v-model="newItem.date_acquired" type="date" />
-      </div>
-
-      <div class="po-section">
-        <label for="po_no">Purchase Order</label>
-        <div class="po-inputs">
-          <select id="po_no" v-model="newItem.po_no" required>
-            <option disabled value="">-- Select Purchase Order --</option>
-            <option v-for="po in purchaseOrders" :key="po.po_no" :value="po.po_no">
-              <!-- {{ po.po_no }} -->
-              <span v-if="po.supplier"> {{ po.supplier }}</span>
-              <span v-if="po.total_amount"> (₱{{ po.total_amount }})</span>
-            </option>
-          </select>
-          <button type="button" @click="showPoForm = true">Add New PO</button>
-        </div>
-      </div>
-
-      <div class="form-actions">
-        <button type="submit" class="save-btn">Save Item</button>
-        <button type="button" class="cancel-btn" @click="cancelAdd">Cancel</button>
-      </div>
-    </form>
+    <p>View Items and Purchase Orders</p>
 
     <hr />
 
     <!-- Items Table -->
     <div class="table-wrapper">
+      <h3>Items</h3>
       <table class="items-table">
         <thead>
           <tr>
@@ -82,6 +24,7 @@
             <th>Serial No</th>
             <th>Model/Brand</th>
             <th>Date Acquired</th>
+            <th>PO Linked</th>
             <th>Item Sticker</th>
             <th>Actions</th>
           </tr>
@@ -99,6 +42,12 @@
             <td>{{ item.model_brand }}</td>
             <td>{{ item.date_acquired }}</td>
             <td>
+              <span v-if="item.po_no" class="po-badge"
+                >Purchase Order Number: {{ item.po_no }}</span
+              >
+              <span v-else class="no-po">N/A</span>
+            </td>
+            <td>
               <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
             </td>
             <td>
@@ -110,32 +59,31 @@
       </table>
     </div>
 
-    <!-- Purchase Order Modal -->
-    <div v-if="showPoForm" class="modal">
-      <div class="modal-content">
-        <h3>Add Purchase Order</h3>
-        <label>Supplier</label>
-        <input v-model="newPurchaseOrder.supplier" placeholder="Supplier Name" required />
-
-        <label>Total Amount</label>
-        <input
-          type="number"
-          step="0.01"
-          v-model="newPurchaseOrder.total_amount"
-          placeholder="Amount in Peso"
-          required
-        />
-
-        <label>Order Date</label>
-        <input type="date" v-model="newPurchaseOrder.order_date" required />
-
-        <div class="modal-actions">
-          <button @click="addPurchaseOrder">Save</button>
-          <button @click="showPoForm = false">Cancel</button>
-        </div>
-      </div>
+    <!-- Purchase Orders Table -->
+    <div class="table-wrapper" style="margin-top: 2rem">
+      <h3>Purchase Orders (with items only)</h3>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Purchase Order Number</th>
+            <th>Supplier</th>
+            <th>Total Amount</th>
+            <th>Order Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 🔹 Use linkedPurchaseOrders instead of all purchaseOrders -->
+          <tr v-for="po in linkedPurchaseOrders" :key="po.po_no">
+            <td>{{ po.po_no }}</td>
+            <td>{{ po.supplier }}</td>
+            <td>₱{{ po.total_amount }}</td>
+            <td>{{ po.order_date }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
+    <!-- Delete Confirmation -->
     <div v-if="showConfirm" class="modal-overlay">
       <div class="modal-card">
         <h3>Confirm Delete</h3>
@@ -151,7 +99,6 @@
     <div v-if="editingItem" class="modal">
       <div class="modal-content">
         <h3>Edit Item</h3>
-        <!-- same fields as before -->
         <label>Item Name</label>
         <input v-model="editingItem.name" placeholder="Item Name" required />
         <label>Property No</label>
@@ -166,14 +113,6 @@
         <input v-model="editingItem.model_brand" placeholder="Model/Brand" />
         <label>Date Acquired</label>
         <input v-model="editingItem.date_acquired" type="date" placeholder="Date Acquired" />
-
-        <label>Purchase Order</label>
-        <select v-model="editingItem.po_no">
-          <option disabled value="">-- Select Purchase Order --</option>
-          <option v-for="po in purchaseOrders" :key="po.po_no" :value="po.po_no">
-            {{ po.po_no }} - {{ po.supplier }} (₱{{ po.total_amount }})
-          </option>
-        </select>
 
         <div style="margin-top: 12px; display: flex; justify-content: flex-end">
           <button @click="updateItem">Save</button>
@@ -219,29 +158,18 @@ export default {
     return {
       items: [],
       purchaseOrders: [],
-      showPoForm: false,
       showConfirm: false,
       itemToDelete: null,
-      newItem: {
-        name: '',
-        property_no: '',
-        location: '',
-        status: '',
-        serial_no: '',
-        model_brand: '',
-        date_acquired: '',
-        po_no: '',
-      },
-      newPurchaseOrder: {
-        // ✅ initialize here
-        supplier: '',
-        total_amount: '',
-        order_date: '',
-      },
       editingItem: null,
       stickerItem: null,
-      showAddForm: false, // <<-- controls visibility
     }
+  },
+  computed: {
+    // 🔹 Only include purchase orders that have at least one item
+    linkedPurchaseOrders() {
+      const linkedPoNos = new Set(this.items.map((item) => item.po_no).filter(Boolean))
+      return this.purchaseOrders.filter((po) => linkedPoNos.has(po.po_no))
+    },
   },
   async mounted() {
     await this.fetchItems()
@@ -277,69 +205,16 @@ export default {
     },
 
     async fetchPurchaseOrders() {
-      const { data, error } = await supabase.from('purchase_order').select('*')
+      const { data, error } = await supabase
+        .from('purchase_order')
+        .select('*')
+        .order('po_no', { ascending: true })
 
       if (error) {
         console.error('Error fetching purchase orders:', error.message)
-        this.purchaseOrders = [] // ✅ fallback
+        this.purchaseOrders = []
       } else {
-        this.purchaseOrders = data || [] // ✅ never null
-      }
-    },
-
-    async addPurchaseOrder() {
-      const { data, error } = await supabase
-        .from('purchase_order')
-        .insert([this.newPurchaseOrder])
-        .select()
-
-      if (error) {
-        alert('Error adding purchase order: ' + error.message)
-        return
-      }
-
-      // Refresh PO list
-      await this.fetchPurchaseOrders()
-
-      // Auto-select the newly created PO for the item form
-      if (data && data.length > 0) {
-        this.newItem.po_no = data[0].po_no
-      }
-
-      // Reset form + close modal
-      this.newPurchaseOrder = { supplier: '', total_amount: '', order_date: '' }
-      this.showPoForm = false
-    },
-
-    async addItem() {
-      const { error } = await supabase.from('items').insert([this.newItem])
-      if (error) {
-        alert('Error adding item: ' + error.message)
-      } else {
-        await this.fetchItems()
-        this.newItem = {
-          name: '',
-          property_no: '',
-          location: '',
-          status: '',
-          serial_no: '',
-          model_brand: '',
-          date_acquired: '',
-        }
-        this.showForm = false // hide form after add
-      }
-    },
-
-    cancelAdd() {
-      this.showAddForm = false
-      this.newItem = {
-        name: '',
-        property_no: '',
-        location: '',
-        status: '',
-        serial_no: '',
-        model_brand: '',
-        date_acquired: '',
+        this.purchaseOrders = data || []
       }
     },
 
@@ -405,3 +280,41 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.items-table th,
+.items-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.items-table th {
+  background: #a7b982;
+}
+
+.has-po-row {
+  background-color: #f9fff4; /* light green highlight */
+}
+
+.po-badge {
+  background: #4caf50;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+
+.no-po {
+  background: #e0e0e0;
+  color: #555;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+</style>

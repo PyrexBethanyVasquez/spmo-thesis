@@ -13,9 +13,9 @@
             <ion-icon name="document-text-outline"></ion-icon>
             View Reports
           </li>
-          <li @click="departments">
-            <ion-icon name="square-outline"></ion-icon>
-            View Departments
+          <li @click="itemLists">
+            <ion-icon name="list-outline"></ion-icon>
+            Item Lists
           </li>
 
           <li @click="toggleDropdown">
@@ -35,7 +35,7 @@
             </li>
             <li @click="createUser">
               <ion-icon name="shield-checkmark-outline"></ion-icon>
-              Create Account
+              Create Staff Account
             </li>
           </ul>
         </ul>
@@ -235,8 +235,8 @@ export default {
         router.push('/')
       })
     },
-    departments() {
-      this.$router.push('/items')
+    itemLists() {
+      this.$router.push('/item-lists')
     },
     createUser() {
       this.$router.push('/createaccount')

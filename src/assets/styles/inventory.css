@@ -354,6 +354,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1em;
+  justify-content: space-between;
 }
 
 .add-item-btn {
@@ -418,4 +419,96 @@
 
 .form-actions .cancel-btn:hover {
   background: #8b0a0a;
+}
+
+/* Purchase Order Section */
+.item-form label[for='po_no'] {
+  font-weight: 600;
+  margin-bottom: 1px;
+  display: block;
+  color: #333;
+}
+
+.po-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.po-inputs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.po-inputs select {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border 0.2s;
+}
+
+.po-inputs select:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.po-inputs button {
+  padding: 6px 12px;
+  background-color: #2563eb; /* */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+
+  display: inline-flex; /* keep content inline */
+  align-items: center; /* vertical centering */
+  white-space: nowrap; /* prevent line breaks */
+}
+
+.po-inputs button:hover {
+  background-color: #1d4ed8;
+}
+
+@media (max-width: 600px) {
+  .po-section .po-inputs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .po-section select,
+  .po-section button {
+    width: 100%; /* full width on small screens */
+  }
+}
+
+.po-badge {
+  background: #4caf50;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+
+.reports-btn {
+  background-color: #027693;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px; /* space between icon and text */
+}
+
+.reports-btn:hover {
+  background-color: #0aa2c8;
 }
