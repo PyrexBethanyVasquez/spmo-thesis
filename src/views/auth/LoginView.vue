@@ -9,8 +9,8 @@
       />
 
       <!-- Title -->
-      <h1 class="admin-auth-title">Admin Login</h1>
-      <p class="admin-auth-subtitle">Sign in to access the dashboard</p>
+      <h1 class="admin-auth-title">Admin Access</h1>
+      <p class="admin-auth-subtitle">Please sign in to access the system</p>
 
       <!-- Error Message -->
       <transition name="fade">
@@ -20,23 +20,53 @@
       <!-- Login -->
       <form @submit.prevent="login" class="admin-auth-form">
         <!-- Email -->
-        <input type="email" placeholder="Admin Email" v-model="email" required />
+        <div class="form-group">
+          <ion-icon name="mail-outline" class="input-icon"></ion-icon>
+          <input type="email" placeholder="Admin Email" v-model="email" required />
+        </div>
 
         <!-- Password with toggle -->
-        <div class="password-wrapper">
+        <div class="form-group password-group">
+          <ion-icon name="lock-closed-outline" class="input-icon"></ion-icon>
           <input
             :type="showPassword ? 'text' : 'password'"
             placeholder="Password"
             v-model="password"
             required
           />
-          <span class="toggle-icon" @click="togglePassword">
-            <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-          </span>
+          <ion-icon
+            :name="showPassword ? 'eye-off-outline' : 'eye-outline'"
+            class="toggle-password"
+            @click="showPassword = !showPassword"
+          ></ion-icon>
+        </div>
+
+        <!-- Remember Me + Forgot Password -->
+        <div class="options">
+          <label class="remember-me">
+            <input type="checkbox" v-model="rememberMe" />
+            <span class="checkbox-icon"><ion-icon name="checkmark-outline"></ion-icon></span>
+            Remember Me
+          </label>
+
+          <!-- Forgot Password as text -->
+          <span class="forgot-password-text" @click="showModal = true"> Forgot Password? </span>
+        </div>
+
+        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+          <div class="modal-card">
+            <h3>Contact Developers</h3>
+            <p>
+              Please contact the developers at
+              <a href="mailto:pyrex.pbv@gmail.com" class="modal-link">pyrex.pbv@gmail.com</a>
+              for password assistance.
+            </p>
+            <button class="modal-close-btn" @click="showModal = false">Close</button>
+          </div>
         </div>
 
         <!-- Login button -->
-        <button type="submit" class="login-btn">Login</button>
+        <button type="submit" class="login-btn">Sign in</button>
       </form>
 
       <!-- Footer -->
@@ -48,20 +78,34 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../../clients/supabase.js'
 
 let email = ref('')
 let password = ref('')
 let showPassword = ref(false)
+let rememberMe = ref(false)
 let authError = ref(null)
 const router = useRouter()
+const showModal = ref(false)
 
-const togglePassword = () => {
-  showPassword.value = !showPassword.value
-}
+onMounted(async () => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
+  if (session) {
+    router.push('/home')
+  } else {
+    // pre-fill email if previously remembered
+    const rememberedEmail = localStorage.getItem('rememberEmail')
+    if (rememberedEmail) {
+      email.value = rememberedEmail
+      rememberMe.value = true
+    }
+  }
+})
 async function login() {
   authError.value = null
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -87,138 +131,15 @@ async function login() {
       }, 2000)
       return
     }
+
+    if (rememberMe.value) {
+      localStorage.setItem('rememberAdmin', 'true')
+      localStorage.setItem('rememberEmail', email.value)
+    } else {
+      localStorage.removeItem('rememberAdmin')
+      localStorage.removeItem('rememberEmail')
+    }
     router.push('/home')
   }
 }
 </script>
-
-<style scoped>
-.admin-auth-wrapper {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  /* Green gradient background */
-  background: linear-gradient(135deg, #675c14, #035b01);
-}
-
-.admin-auth-card {
-  background: rgba(136, 133, 133, 0.053); /* semi-transparent white */
-  padding: 2rem 2.5rem;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 400px;
-
-  /* Glassmorphism effect */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-
-  text-align: center;
-  color: white;
-}
-
-.admin-auth-logo {
-  width: 70px;
-  margin-bottom: 1rem;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 5px;
-}
-
-.admin-auth-title {
-  font-size: 1.6rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #ffffff;
-}
-
-.admin-auth-subtitle {
-  font-size: 0.95rem;
-  color: #e0f2e9;
-  margin-bottom: 1.5rem;
-}
-
-.auth-error {
-  color: #ffdddd;
-  background: rgba(255, 0, 0, 0.2);
-  padding: 0.5rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-}
-
-.admin-auth-form input {
-  width: 100%;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  font-size: 0.95rem;
-  outline: none;
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-}
-
-.admin-auth-form input::placeholder {
-  color: #d8f3dc;
-}
-
-.password-wrapper {
-  position: relative;
-}
-
-.password-wrapper input {
-  width: 100%;
-  padding-right: 2.5rem;
-}
-
-.toggle-icon {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-80%);
-  cursor: pointer;
-  color: #d8f3dc;
-}
-
-.login-btn {
-  width: 100%;
-  padding: 0.75rem;
-  background: linear-gradient(90deg, #ffcc00, #ffdb4d);
-  color: rgb(0, 0, 0);
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition:
-    background 0.3s ease,
-    transform 0.2s ease;
-}
-
-.login-btn:hover {
-  background: linear-gradient(90deg, #c8a312, #ffdb4d);
-  transform: translateY(-2px);
-}
-
-.admin-footer {
-  margin-top: 1.5rem;
-}
-
-.small-text {
-  font-size: 0.8rem;
-  color: #d8f3dc;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>

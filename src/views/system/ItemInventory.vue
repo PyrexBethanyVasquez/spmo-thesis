@@ -46,6 +46,19 @@
         <input id="date_acquired" v-model="newItem.date_acquired" type="date" />
       </div>
 
+      <div class="condition-section">
+        <label for="condition">Condition</label>
+        <div class="condition-inputs">
+          <select id="condition" v-model="newItem.condition_id" required>
+            <option disabled value="">-- Select Condition --</option>
+            <option v-for="cond in conditions" :key="cond.condition_id" :value="cond.condition_id">
+              {{ cond.condition_name }}
+            </option>
+          </select>
+          <button type="button" @click="showConditionForm = true">Add New Condition</button>
+        </div>
+      </div>
+
       <div class="po-section">
         <label for="po_no">Purchase Order</label>
         <div class="po-inputs">
@@ -136,6 +149,18 @@
       </div>
     </div>
 
+    <!-- New Condition Modal -->
+    <div v-if="showConditionForm" class="modal">
+      <div class="modal-content">
+        <h3>Add Condition</h3>
+        <input v-model="newCondition.condition_name" placeholder="Condition Name" required />
+        <div class="modal-actions">
+          <button @click="addCondition">Save</button>
+          <button @click="showConditionForm = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showConfirm" class="modal-overlay">
       <div class="modal-card">
         <h3>Confirm Delete</h3>
@@ -147,35 +172,72 @@
       </div>
     </div>
 
-    <!-- Edit Item Modal -->
     <div v-if="editingItem" class="modal">
       <div class="modal-content">
         <h3>Edit Item</h3>
-        <!-- same fields as before -->
-        <label>Item Name</label>
-        <input v-model="editingItem.name" placeholder="Item Name" required />
-        <label>Property No</label>
-        <input v-model="editingItem.property_no" placeholder="Property No" />
-        <label>Location</label>
-        <input v-model="editingItem.location" placeholder="Location" />
-        <label>Status</label>
-        <input v-model="editingItem.status" placeholder="Status" />
-        <label>Serial No</label>
-        <input v-model="editingItem.serial_no" placeholder="Serial No" />
-        <label>Model/Brand</label>
-        <input v-model="editingItem.model_brand" placeholder="Model/Brand" />
-        <label>Date Acquired</label>
-        <input v-model="editingItem.date_acquired" type="date" placeholder="Date Acquired" />
 
-        <label>Purchase Order</label>
-        <select v-model="editingItem.po_no">
-          <option disabled value="">-- Select Purchase Order --</option>
-          <option v-for="po in purchaseOrders" :key="po.po_no" :value="po.po_no">
-            {{ po.po_no }} - {{ po.supplier }} (₱{{ po.total_amount }})
-          </option>
-        </select>
+        <div class="modal-grid">
+          <div>
+            <label>Item Name</label>
+            <input v-model="editingItem.name" placeholder="Item Name" required />
+          </div>
 
-        <div style="margin-top: 12px; display: flex; justify-content: flex-end">
+          <div>
+            <label>Property No</label>
+            <input v-model="editingItem.property_no" placeholder="Property No" />
+          </div>
+
+          <div>
+            <label>Location</label>
+            <input v-model="editingItem.location" placeholder="Location" />
+          </div>
+
+          <div>
+            <label>Status</label>
+            <input v-model="editingItem.status" placeholder="Status" />
+          </div>
+
+          <div>
+            <label>Serial No</label>
+            <input v-model="editingItem.serial_no" placeholder="Serial No" />
+          </div>
+
+          <div>
+            <label>Model/Brand</label>
+            <input v-model="editingItem.model_brand" placeholder="Model/Brand" />
+          </div>
+
+          <div>
+            <label>Date Acquired</label>
+            <input v-model="editingItem.date_acquired" type="date" />
+          </div>
+
+          <div>
+            <label>Condition</label>
+            <select v-model="editingItem.condition_id">
+              <option disabled value="">-- Select Condition --</option>
+              <option
+                v-for="cond in conditions"
+                :key="cond.condition_id"
+                :value="cond.condition_id"
+              >
+                {{ cond.condition_name }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label>Purchase Order</label>
+            <select v-model="editingItem.po_no">
+              <option disabled value="">-- Select Purchase Order --</option>
+              <option v-for="po in purchaseOrders" :key="po.po_no" :value="po.po_no">
+                {{ po.po_no }} - {{ po.supplier }} (₱{{ po.total_amount }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-actions">
           <button @click="updateItem">Save</button>
           <button @click="cancelEdit">Cancel</button>
         </div>
@@ -219,7 +281,9 @@ export default {
     return {
       items: [],
       purchaseOrders: [],
+      conditions: [],
       showPoForm: false,
+      showConditionForm: false,
       showConfirm: false,
       itemToDelete: null,
       newItem: {
@@ -231,13 +295,17 @@ export default {
         model_brand: '',
         date_acquired: '',
         po_no: '',
+        condition_id: '',
       },
       newPurchaseOrder: {
-        // ✅ initialize here
         supplier: '',
         total_amount: '',
         order_date: '',
       },
+      newCondition: {
+        condition_name: '',
+      },
+
       editingItem: null,
       stickerItem: null,
       showAddForm: false, // <<-- controls visibility
@@ -246,6 +314,7 @@ export default {
   async mounted() {
     await this.fetchItems()
     await this.fetchPurchaseOrders()
+    await this.fetchConditions()
   },
   methods: {
     async fetchItems() {
@@ -281,9 +350,19 @@ export default {
 
       if (error) {
         console.error('Error fetching purchase orders:', error.message)
-        this.purchaseOrders = [] // ✅ fallback
+        this.purchaseOrders = [] // fallback
       } else {
-        this.purchaseOrders = data || [] // ✅ never null
+        this.purchaseOrders = data || [] // never null
+      }
+    },
+
+    async fetchConditions() {
+      const { data, error } = await supabase.from('condition').select('*')
+      if (error) {
+        console.error('Error fetching conditions:', error.message)
+        this.conditions = []
+      } else {
+        this.conditions = data || []
       }
     },
 
@@ -309,6 +388,27 @@ export default {
       // Reset form + close modal
       this.newPurchaseOrder = { supplier: '', total_amount: '', order_date: '' }
       this.showPoForm = false
+    },
+
+    async addCondition() {
+      const { data, error } = await supabase.from('condition').insert([this.newCondition]).select()
+
+      if (error) {
+        alert('Error adding condition: ' + error.message)
+        return
+      }
+
+      // Refresh conditions list
+      await this.fetchConditions()
+
+      // Auto-select the newly created condition for the item form
+      if (data && data.length > 0) {
+        this.newItem.condition_id = data[0].id
+      }
+
+      // Reset form + close modal
+      this.newCondition = { condition_name: '' }
+      this.showConditionForm = false
     },
 
     async addItem() {

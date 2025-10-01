@@ -1,15 +1,44 @@
 <template>
-  <div class="auth-wrapper" v-if="role === 'admin'">
-    <div class="auth-card">
-      <form @submit.prevent="createaccount" class="auth-form">
-        <input type="text" placeholder="Username" v-model="name" />
-        <input type="email" placeholder="Email" v-model="email" />
-        <input type="password" placeholder="Password" v-model="password" />
-        <button type="submit" class="signup-btn">Create Account</button>
+  <div class="admin-wrapper" v-if="role === 'admin'">
+    <div class="admin-card">
+      <h2>Create New User</h2>
+      <p class="subtitle">Only admins can create new accounts</p>
+
+      <form @submit.prevent="createaccount" class="admin-form">
+        <div class="form-group">
+          <ion-icon name="person-outline" class="input-icon"></ion-icon>
+          <input type="text" v-model="name" placeholder="Full Name" required />
+        </div>
+
+        <div class="form-group">
+          <ion-icon name="mail-outline" class="input-icon"></ion-icon>
+          <input type="email" v-model="email" placeholder="Email Address" required />
+        </div>
+
+        <div class="form-group password-group">
+          <ion-icon name="lock-closed-outline" class="input-icon"></ion-icon>
+          <input
+            :type="showPassword ? 'text' : 'password'"
+            v-model="password"
+            placeholder="Password"
+            required
+          />
+          <ion-icon
+            :name="showPassword ? 'eye-off-outline' : 'eye-outline'"
+            class="toggle-password"
+            @click="showPassword = !showPassword"
+          ></ion-icon>
+
+          <!-- Error message below password field -->
+          <p v-if="passwordError" class="error-msg">{{ passwordError }}</p>
+        </div>
+
+        <button type="submit" class="btn-submit">Create Account</button>
       </form>
     </div>
   </div>
-  <div v-else>
+
+  <div v-else class="unauthorized">
     <p>{{ unauthorizedMessage }}</p>
   </div>
 </template>
@@ -23,9 +52,11 @@ let email = ref('')
 let password = ref('')
 let name = ref('')
 let role = ref('user')
+let showPassword = ref(false)
+let passwordError = ref('')
+//let unauthorizedMessage = 'You are not allowed to access this page.'
 
 onMounted(async () => {
-  // get current logged in user
   const { data } = await supabase.auth.getUser()
   const user = data.user
 
@@ -51,72 +82,201 @@ async function createaccount() {
     return
   }
 
+  if (password.value.length < 8) {
+    passwordError.value = 'Password must be at least 8 characters.'
+    return
+  }
+  if (password.value.length > 20) {
+    passwordError.value = 'Password cannot exceed 20 characters.'
+    return
+  }
+
+  // Optional: Require uppercase, number, special char
+  const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).*$/
+  if (!passwordRegex.test(password.value)) {
+    passwordError.value =
+      'Password must include at least one uppercase letter, one number, and one special character.'
+    return
+  }
+
+  // check if user already exists in users table
+  const { data: existingUser, error: fetchError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', email.value)
+    .maybeSingle()
+
+  if (fetchError) {
+    console.error('Error checking existing user:', fetchError.message)
+    return
+  }
+
+  if (existingUser) {
+    console.log('User with this email already exists.')
+    return
+  }
+
+  // create user in Supabase Auth
   const { data, error } = await supabase.auth.signUp({
     email: email.value,
     password: password.value,
     options: {
       data: {
-        full_name: name.value,
-        role: 'user',
+        full_name: name.value, // Display Name in Auth
+        role: 'user', // metadata role
       },
     },
   })
 
   if (error) {
     console.log('Error creating account:', error.message)
-  } else {
-    console.log('Account created successfully:', data)
-    router.push('/home')
+    return
   }
+
+  console.log('Account created successfully in Auth:', data)
+
+  // insert into users table after signup
+  const { error: insertError } = await supabase.from('users').upsert([
+    {
+      id: data.user.id,
+      email: email.value,
+      full_name: name.value,
+      role: 'user',
+    },
+  ])
+
+  if (insertError) {
+    console.log('Error inserting into users table:', insertError.message)
+    return
+  }
+
+  console.log('User successfully added to users table.')
+
+  router.push('/home')
 }
 </script>
 
 <style scoped>
 /* Background */
-.auth-wrapper {
+.admin-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: #f7f8fa;
+  background-color: #ffffff;
   font-family: 'Roboto', sans-serif;
 }
 
 /* Card */
-.auth-card {
-  background: #fff;
-  padding: 2.5rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+.admin-card {
+  background-color: transparent;
+  padding: 2.5rem 2rem;
+  /* border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); */
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
   text-align: center;
 }
 
-/* Forms */
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-.auth-form input {
-  padding: 0.75rem;
-  border: 1px solid #dadce0;
-  border-radius: 4px;
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.auth-form input:focus {
-  border-color: #1a73e8;
-  box-shadow: 0 0 0 1px #1a73e8;
+.admin-card h2 {
+  margin-bottom: 0.3rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
 }
 
-.signup-btn {
-  background: #34a853;
+.admin-card .subtitle {
+  margin-bottom: 1.5rem;
+  color: #666;
+  font-size: 0.95rem;
 }
-.signup-btn:hover {
-  background: #2b7e41;
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.form-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  color: black;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+.input-icon {
+  position: absolute;
+  left: 0.8rem;
+  top: 50%; /* vertically center relative to parent */
+  transform: translateY(-50%); /* center exactly */
+  font-size: 1.2rem;
+  color: #b19402;
+}
+
+.password-group .toggle-password {
+  position: absolute;
+  right: 0.8rem;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #b19402;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.password-group {
+  position: relative;
+  display: flex;
+  flex-direction: column; /* Stack input and error vertically */
+}
+
+/* Button */
+.btn-submit {
+  padding: 0.75rem;
+  background-color: #178105;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
+}
+
+.btn-submit:hover {
+  background-color: #1ba403;
+  transform: translateY(-1px);
+}
+
+/* Unauthorized message */
+.unauthorized {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1rem;
+  color: #d32f2f;
+}
+
+.error-msg {
+  color: #ff4d4f; /* red for errors */
+  font-size: 0.85rem; /* smaller text */
+  margin-top: 0.3rem; /* space below input */
 }
 </style>

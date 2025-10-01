@@ -1,7 +1,7 @@
 <template>
   <div class="items-page">
     <div class="page-header">
-      <h2>Item Inventory</h2>
+      <h2>Item Lists</h2>
       <router-link to="/reports">
         <button class="reports-btn"><i class="fas fa-file-alt"></i>Go to Reports</button>
       </router-link>
@@ -16,24 +16,24 @@
       <table class="items-table">
         <thead>
           <tr>
-            <th>QR Code</th>
-            <th>Name</th>
+            <th>Item Name</th>
             <th>Property No</th>
             <th>Location</th>
             <th>Status</th>
             <th>Serial No</th>
             <th>Model/Brand</th>
             <th>Date Acquired</th>
-            <th>PO Linked</th>
+            <th>Item Condition</th>
+            <th>Purchase Order Linked</th>
             <th>Item Sticker</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="item in items" :key="item.item_no">
-            <td>
+            <!-- <td>
               <img v-if="item.qrCode" :src="item.qrCode" alt="QR Code" class="qr-img" />
-            </td>
+            </td> -->
             <td>{{ item.name }}</td>
             <td>{{ item.property_no }}</td>
             <td>{{ item.location }}</td>
@@ -41,12 +41,14 @@
             <td>{{ item.serial_no }}</td>
             <td>{{ item.model_brand }}</td>
             <td>{{ item.date_acquired }}</td>
+            <td>{{ item.condition_name || 'N/A' }}</td>
             <td>
               <span v-if="item.po_no" class="po-badge"
                 >Purchase Order Number: {{ item.po_no }}</span
               >
               <span v-else class="no-po">N/A</span>
             </td>
+
             <td>
               <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
             </td>
@@ -158,6 +160,7 @@ export default {
     return {
       items: [],
       purchaseOrders: [],
+      condition_names: [],
       showConfirm: false,
       itemToDelete: null,
       editingItem: null,
@@ -174,12 +177,20 @@ export default {
   async mounted() {
     await this.fetchItems()
     await this.fetchPurchaseOrders()
+    await this.fetchConditions()
   },
   methods: {
     async fetchItems() {
       const { data, error } = await supabase
         .from('items')
-        .select('*')
+        .select(
+          `
+      *,
+      condition:condition_id (
+        condition_name
+      )
+    `,
+        )
         .order('item_no', { ascending: true })
 
       if (error) {
@@ -195,10 +206,10 @@ export default {
               width: 150,
               margin: 1,
             })
-            return { ...item, qrCode }
+            return { ...item, qrCode, condition_name: item.condition?.condition_name || 'N/A' }
           } catch (e) {
             console.warn('QR generation failed for item', item, e)
-            return { ...item, qrCode: '' }
+            return { ...item, qrCode: '', condition_name: item.condition?.condition_name || 'N/A' }
           }
         }),
       )
@@ -215,6 +226,20 @@ export default {
         this.purchaseOrders = []
       } else {
         this.purchaseOrders = data || []
+      }
+    },
+
+    async fetchConditions() {
+      const { data, error } = await supabase
+        .from('condition')
+        .select('condition_name')
+        .order('condition_name', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching conditions:', error.message)
+        this.condition_names = []
+      } else {
+        this.condition_names = data ? data.map((c) => c.condition_name) : []
       }
     },
 

@@ -13,9 +13,26 @@
         </button>
       </div>
     </div>
+
     <p>View all items with their associated purchase orders</p>
 
     <hr />
+    <br />
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <div class="summary-card">
+        <h3>Total Items</h3>
+        <p>{{ totalItems }}</p>
+      </div>
+      <div class="summary-card">
+        <h3>Total Purchase Orders</h3>
+        <p>{{ totalPOs }}</p>
+      </div>
+      <div class="summary-card">
+        <h3>Total Suppliers</h3>
+        <p>{{ totalSuppliers }}</p>
+      </div>
+    </div>
 
     <div class="table-wrapper">
       <table class="reports-table">
@@ -28,7 +45,7 @@
             <th>Serial No</th>
             <th>Model/Brand</th>
             <th>Date Acquired</th>
-            <th>Purchase Order No</th>
+            <th>PO No</th>
             <th>Supplier</th>
             <th>Total Amount</th>
             <th>Order Date</th>
@@ -68,30 +85,30 @@ export default {
   data() {
     return {
       itemsWithPO: [],
+      totalItems: 0,
+      totalPOs: 0,
+      totalSuppliers: 0,
     }
   },
   async mounted() {
     await this.fetchItemsWithPO()
+    this.calculateSummary()
   },
   methods: {
     async fetchItemsWithPO() {
-      // Fetch items including their purchase_order (adjust foreign key)
       const { data, error } = await supabase
         .from('items')
-        .select(
-          `
-          *,
-          purchase_order:purchase_order!inner(*)
-        `,
-        )
+        .select(`*, purchase_order:purchase_order!inner(*)`)
         .order('item_no', { ascending: true })
 
-      if (error) {
-        console.error('Error fetching report data:', error.message)
-        return
-      }
-
+      if (error) return console.error(error)
       this.itemsWithPO = data
+    },
+    calculateSummary() {
+      this.totalItems = this.itemsWithPO.length
+      this.totalPOs = this.itemsWithPO.filter((i) => i.purchase_order).length
+      const suppliers = this.itemsWithPO.map((i) => i.purchase_order?.supplier).filter(Boolean)
+      this.totalSuppliers = [...new Set(suppliers)].length
     },
 
     exportCSV() {
@@ -223,5 +240,32 @@ p {
 
 .reports-table tr:nth-child(even) {
   background-color: #fafafa;
+}
+
+.summary-cards {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.summary-card {
+  flex: 1;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.summary-card h3 {
+  margin-bottom: 0.5rem;
+  font-size: 16px;
+  color: #333;
+}
+
+.summary-card p {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1976d2;
 }
 </style>
