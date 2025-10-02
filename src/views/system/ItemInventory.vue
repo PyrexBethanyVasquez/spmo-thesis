@@ -81,6 +81,7 @@
     </form>
 
     <hr />
+    <br />
 
     <!-- Items Table -->
     <div class="table-wrapper">
@@ -104,7 +105,13 @@
             <td>
               <img v-if="item.qrCode" :src="item.qrCode" alt="QR Code" class="qr-img" />
             </td>
-            <td>{{ item.name }}</td>
+            <td class="item-cell">
+              <span v-if="item.item_no === recentlyAddedItemId" class="badge-overlay">
+                Recently Added
+              </span>
+              <span class="item-name">{{ item.name }}</span>
+            </td>
+
             <td>{{ item.property_no }}</td>
             <td>{{ item.location }}</td>
             <td>{{ item.status }}</td>
@@ -286,6 +293,7 @@ export default {
       showConditionForm: false,
       showConfirm: false,
       itemToDelete: null,
+      recentlyAddedItemId: null,
       newItem: {
         name: '',
         property_no: '',
@@ -315,13 +323,17 @@ export default {
     await this.fetchItems()
     await this.fetchPurchaseOrders()
     await this.fetchConditions()
+    const savedId = localStorage.getItem('recentlyAddedItemId')
+    if (savedId) {
+      this.recentlyAddedItemId = savedId
+    }
   },
   methods: {
     async fetchItems() {
       const { data, error } = await supabase
         .from('items')
         .select('*')
-        .order('item_no', { ascending: true })
+        .order('date_acquired', { ascending: false })
 
       if (error) {
         console.error('Error fetching items:', error.message)
@@ -412,11 +424,18 @@ export default {
     },
 
     async addItem() {
-      const { error } = await supabase.from('items').insert([this.newItem])
+      const { data, error } = await supabase.from('items').insert([this.newItem]).select('*')
       if (error) {
         alert('Error adding item: ' + error.message)
       } else {
+        console.log('Inserted item:', data)
         await this.fetchItems()
+
+        if (data && data.length > 0) {
+          const newId = data[0].id || data[0].item_no
+          this.recentlyAddedItemId = newId
+          localStorage.setItem('recentlyAddedItemId', newId)
+        }
         this.newItem = {
           name: '',
           property_no: '',

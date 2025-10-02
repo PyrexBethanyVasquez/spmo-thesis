@@ -9,31 +9,21 @@
     <p>View Items and Purchase Orders</p>
 
     <hr />
+    <h3>Items</h3>
 
     <!-- Items Table -->
     <div class="table-wrapper">
-      <h3>Items</h3>
       <table class="items-table">
         <thead>
           <tr>
-            <th>Item Name</th>
-            <th>Property No</th>
-            <th>Location</th>
-            <th>Status</th>
-            <th>Serial No</th>
-            <th>Model/Brand</th>
-            <th>Date Acquired</th>
-            <th>Item Condition</th>
-            <th>Purchase Order Linked</th>
-            <th>Item Sticker</th>
-            <th>Actions</th>
+            <th v-for="header in itemHeaders" :key="header" class="resizable">
+              {{ header }}
+              <div class="resizer" @mousedown="startResize($event)"></div>
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="item in items" :key="item.item_no">
-            <!-- <td>
-              <img v-if="item.qrCode" :src="item.qrCode" alt="QR Code" class="qr-img" />
-            </td> -->
             <td>{{ item.name }}</td>
             <td>{{ item.property_no }}</td>
             <td>{{ item.location }}</td>
@@ -43,12 +33,11 @@
             <td>{{ item.date_acquired }}</td>
             <td>{{ item.condition_name || 'N/A' }}</td>
             <td>
-              <span v-if="item.po_no" class="po-badge"
-                >Purchase Order Number: {{ item.po_no }}</span
-              >
+              <span v-if="item.po_no" class="po-badge">
+                Purchase Order Number: {{ item.po_no }}
+              </span>
               <span v-else class="no-po">N/A</span>
             </td>
-
             <td>
               <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
             </td>
@@ -61,20 +50,22 @@
       </table>
     </div>
 
+    <br />
+
+    <h3>Purchase Orders (with items only)</h3>
+
     <!-- Purchase Orders Table -->
-    <div class="table-wrapper" style="margin-top: 2rem">
-      <h3>Purchase Orders (with items only)</h3>
+    <div class="table-wrapper">
       <table class="items-table">
         <thead>
           <tr>
-            <th>Purchase Order Number</th>
-            <th>Supplier</th>
-            <th>Total Amount</th>
-            <th>Order Date</th>
+            <th v-for="header in poHeaders" :key="header" class="resizable">
+              {{ header }}
+              <div class="resizer" @mousedown="startResize($event)"></div>
+            </th>
           </tr>
         </thead>
         <tbody>
-          <!-- 🔹 Use linkedPurchaseOrders instead of all purchaseOrders -->
           <tr v-for="po in linkedPurchaseOrders" :key="po.po_no">
             <td>{{ po.po_no }}</td>
             <td>{{ po.supplier }}</td>
@@ -127,7 +118,6 @@
     <div v-if="stickerItem" class="modal">
       <div class="modal-content sticker-modal">
         <h3>Print Sticker</h3>
-
         <div class="sticker">
           <img :src="stickerItem.qrCode" alt="QR Code" />
           <div class="sticker-details">
@@ -140,7 +130,6 @@
             <p><strong>Date Acquired:</strong> {{ stickerItem.date_acquired }}</p>
           </div>
         </div>
-
         <div class="modal-actions">
           <button @click="printSticker">Print</button>
           <button @click="closeStickerModal">Close</button>
@@ -165,6 +154,20 @@ export default {
       itemToDelete: null,
       editingItem: null,
       stickerItem: null,
+      itemHeaders: [
+        'Item Name',
+        'Property No',
+        'Location',
+        'Status',
+        'Serial No',
+        'Model/Brand',
+        'Date Acquired',
+        'Item Condition',
+        'Purchase Order Linked',
+        'Item Sticker',
+        'Actions',
+      ],
+      poHeaders: ['Purchase Order Number', 'Supplier', 'Total Amount', 'Order Date'],
     }
   },
   computed: {
@@ -243,6 +246,30 @@ export default {
       }
     },
 
+    startResize(e) {
+      const th = e.target.parentElement
+      const startX = e.pageX
+      const startWidth = th.offsetWidth
+
+      const minWidth = 80
+      const maxWidth = 400
+
+      const doDrag = (ev) => {
+        let newWidth = startWidth + (ev.pageX - startX)
+        if (newWidth < minWidth) newWidth = minWidth
+        if (newWidth > maxWidth) newWidth = maxWidth
+        th.style.width = newWidth + 'px'
+      }
+
+      const stopDrag = () => {
+        document.removeEventListener('mousemove', doDrag)
+        document.removeEventListener('mouseup', stopDrag)
+      }
+
+      document.addEventListener('mousemove', doDrag)
+      document.addEventListener('mouseup', stopDrag)
+    },
+
     editItem(item) {
       this.editingItem = { ...item }
     },
@@ -307,32 +334,74 @@ export default {
 </script>
 
 <style scoped>
-.items-table {
+.table-wrapper {
+  max-height: 100%; /* vertical scroll */
+  overflow-y: auto;
+  overflow-x: auto; /* 🔹 horizontal scroll */
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  -webkit-overflow-scrolling: touch; /* smooth iOS scroll */
+  display: block; /* 🔹 ensure scrolling container */
   width: 100%;
-  border-collapse: collapse;
 }
 
+/* Table layout */
+.items-table {
+  border-collapse: collapse;
+  table-layout: fixed; /* 🔹 let it expand naturally */
+  width: 100%; /* 🔹 force width to grow beyond screen */
+  min-width: 100%; /* at least 100% of wrapper */
+}
 .items-table th,
 .items-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
+  height: 48px;
+  width: 150px; /* initial width */
+  white-space: nowrap; /* prevent text wrapping */
+  text-overflow: ellipsis;
+  overflow: hidden;
+  border: 2px solid #ddd;
+  text-align: center;
 }
 
-.items-table th {
+/* Sticky header */
+.items-table thead th {
+  position: sticky;
+  top: 0;
   background: #a7b982;
+  z-index: 2;
+}
+/* Column Resizer */
+.resizable {
+  position: relative;
 }
 
-.has-po-row {
-  background-color: #f9fff4; /* light green highlight */
+.resizer {
+  position: absolute;
+  top: 0;
+  right: 0; /* only on right side */
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  background: transparent;
+  z-index: 5;
 }
 
+/* Hide resizer on mobile */
+@media (max-width: 768px) {
+  .resizer {
+    display: none;
+  }
+}
+/* Badges */
 .po-badge {
   background: #4caf50;
   color: white;
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 0.85em;
+  display: inline-block;
+  white-space: nowrap;
 }
 
 .no-po {
@@ -341,5 +410,43 @@ export default {
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 0.85em;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .items-table th,
+  .items-table td {
+    font-size: 0.9em;
+    padding: 6px;
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 768px) {
+  .items-table th,
+  .items-table td {
+    font-size: 0.8em;
+    padding: 4px;
+    min-width: 90px;
+  }
+
+  .table-wrapper {
+    max-height: 300px; /* slightly shorter on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .items-table th,
+  .items-table td {
+    font-size: 0.75em;
+    padding: 3px;
+    min-width: 80px;
+  }
+
+  .table-wrapper {
+    max-height: 250px;
+  }
 }
 </style>

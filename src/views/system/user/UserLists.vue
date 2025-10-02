@@ -190,7 +190,7 @@ table {
 }
 
 thead {
-  background-color: #f0f2f5;
+  background-color: #a7b982;
 }
 
 th,

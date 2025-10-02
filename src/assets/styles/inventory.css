@@ -152,14 +152,16 @@
 /* Table */
 .table-wrapper {
   overflow-x: auto;
-  border-radius: 0.75em;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border-radius: 0.5em;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+  -webkit-overflow-scrolling: touch;
 }
 
 .items-table {
   width: 100%;
   border-collapse: collapse;
   background: #fff;
+  min-width: 800px;
 }
 
 .items-table th,
@@ -171,12 +173,23 @@
 }
 
 .items-table th {
-  background: #f8fafc;
+  background: #a7b982;
   font-weight: 600;
   color: #334155; /* slate-700 */
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-size: 0.8em;
+  text-align: center;
+}
+
+.items-table th,
+.items-table td {
+  height: 48px;
+  min-width: 120px; /* ensures scroll works */
+  white-space: nowrap; /* prevent text wrapping */
+  text-overflow: ellipsis;
+  overflow: hidden;
+  border: 2px solid #ddd;
 }
 
 .items-table tr {
@@ -599,4 +612,36 @@
 
 .reports-btn:hover {
   background-color: #0aa2c8;
+}
+
+.item-cell {
+  position: relative; /* allow absolute positioning */
+  padding-top: 12px; /* create space for badge */
+}
+.badge {
+  display: inline-block;
+  background: #28a745;
+  color: white;
+  font-size: 0.65rem; /* smaller text */
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-bottom: 2px; /* tiny gap above name */
+}
+
+.badge-overlay {
+  position: absolute;
+  top: 0; /* stick to top of cell */
+  left: 1;
+  margin-top: 6px; /* tiny gap from top */
+  background: #28a745;
+  color: white;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.item-name {
+  display: block;
 }

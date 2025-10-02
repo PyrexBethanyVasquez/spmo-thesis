@@ -131,6 +131,7 @@ onMounted(async () => {
   flex-direction: column;
   min-height: 100vh;
   min-width: 100%;
+  position: relative;
 }
 
 /* Header */
@@ -219,6 +220,14 @@ onMounted(async () => {
   transform: translateX(0);
 }
 
+.content {
+  flex: 1;
+  width: 100%;
+  min-height: 100vh;
+  background: #ffffff;
+  box-sizing: border-box;
+  overflow-x: hidden; /* 🔹 stop content from pushing page wider */
+}
 /* Main Content */
 .main-content {
   flex: 1;
