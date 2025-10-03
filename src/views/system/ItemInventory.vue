@@ -28,7 +28,12 @@
 
       <div>
         <label for="status">Status</label>
-        <input id="status" v-model="newItem.status" placeholder="Enter status" />
+        <select id="status" v-model="newItem.status" required>
+          <option disabled value="">-- Select Status --</option>
+          <option v-for="action in actions" :key="action.action_id" :value="action.action_id">
+            {{ action.action_name }}
+          </option>
+        </select>
       </div>
 
       <div>
@@ -85,7 +90,7 @@
 
     <!-- Items Table -->
     <div class="table-wrapper">
-      <table class="items-table">
+      <table class="items-table-inventory">
         <thead>
           <tr>
             <th>QR Code</th>
@@ -114,7 +119,7 @@
 
             <td>{{ item.property_no }}</td>
             <td>{{ item.location }}</td>
-            <td>{{ item.status }}</td>
+            <td>{{ item.status_name }}</td>
             <td>{{ item.serial_no }}</td>
             <td>{{ item.model_brand }}</td>
             <td>{{ item.date_acquired }}</td>
@@ -128,6 +133,15 @@
           </tr>
         </tbody>
       </table>
+    </div>
+    <div class="pagination">
+      <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">Previous</button>
+
+      <span>Page {{ currentPage }} of {{ totalPages }}</span>
+
+      <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">
+        Next
+      </button>
     </div>
 
     <!-- Purchase Order Modal -->
@@ -201,7 +215,12 @@
 
           <div>
             <label>Status</label>
-            <input v-model="editingItem.status" placeholder="Status" />
+            <select v-model="editingItem.status">
+              <option disabled value="">-- Select Status --</option>
+              <option v-for="act in actions" :key="act.action_id" :value="act.action_id">
+                {{ act.action_name }}
+              </option>
+            </select>
           </div>
 
           <div>
@@ -289,16 +308,21 @@ export default {
       items: [],
       purchaseOrders: [],
       conditions: [],
+      actions: [],
       showPoForm: false,
       showConditionForm: false,
       showConfirm: false,
       itemToDelete: null,
       recentlyAddedItemId: null,
+      currentPage: 1,
+      pageSize: 5, // items per page
+      totalItems: 0,
+      totalPages: 0,
       newItem: {
         name: '',
         property_no: '',
         location: '',
-        status: '',
+        status: null,
         serial_no: '',
         model_brand: '',
         date_acquired: '',
@@ -323,17 +347,28 @@ export default {
     await this.fetchItems()
     await this.fetchPurchaseOrders()
     await this.fetchConditions()
+    await this.fetchActions()
     const savedId = localStorage.getItem('recentlyAddedItemId')
     if (savedId) {
       this.recentlyAddedItemId = savedId
     }
   },
   methods: {
-    async fetchItems() {
-      const { data, error } = await supabase
+    async fetchItems(page = 1) {
+      const from = (page - 1) * this.pageSize
+      const to = from + this.pageSize - 1
+
+      const { data, error, count } = await supabase
         .from('items')
-        .select('*')
+        .select(
+          `
+      *,
+      action:status(action_id,action_name)
+    `,
+          { count: 'exact' },
+        )
         .order('date_acquired', { ascending: false })
+        .range(from, to)
 
       if (error) {
         console.error('Error fetching items:', error.message)
@@ -348,13 +383,53 @@ export default {
               width: 150,
               margin: 1,
             })
-            return { ...item, qrCode }
+            return {
+              ...item,
+              qrCode,
+              status: item.action?.action_id || null,
+              status_name: item.action?.action_name || 'Issued',
+              condition_name: item.condition?.condition_name || 'N/A',
+            }
           } catch (e) {
             console.warn('QR generation failed for item', item, e)
             return { ...item, qrCode: '' }
           }
         }),
       )
+
+      this.totalItems = count
+      this.totalPages = Math.ceil(count / this.pageSize)
+      this.currentPage = page
+    },
+
+    async fetchDefaultStatus() {
+      const { data, error } = await supabase
+        .from('action')
+        .select('action_id')
+        .eq('action_name', 'Issued')
+        .single()
+
+      if (error) {
+        console.error('Error fetching default status:', error.message)
+      } else {
+        this.defaultStatusId = data.action_id
+        this.newItem.status = this.defaultStatusId // set default for new items
+      }
+    },
+
+    async fetchActions() {
+      const { data, error } = await supabase.from('action').select('*')
+      if (error) {
+        console.error('Error fetching actions:', error.message)
+        this.actions = []
+      } else {
+        console.log('Fetched actions:', data)
+        this.actions = data || []
+
+        // Optionally set default status to "Good"
+        const goodAction = this.actions.find((a) => a.action_name === 'Issued')
+        if (goodAction) this.newItem.status = goodAction.action_id
+      }
     },
 
     async fetchPurchaseOrders() {
@@ -440,13 +515,18 @@ export default {
           name: '',
           property_no: '',
           location: '',
-          status: '',
+          status: this.defaultStatusId,
           serial_no: '',
           model_brand: '',
           date_acquired: '',
         }
         this.showForm = false // hide form after add
       }
+    },
+
+    goToPage(page) {
+      if (page < 1 || page > this.totalPages) return
+      this.fetchItems(page)
     },
 
     cancelAdd() {
@@ -469,6 +549,10 @@ export default {
     async updateItem() {
       const itemData = { ...this.editingItem }
       delete itemData.qrCode
+      delete itemData.action
+      delete itemData.condition_name
+      delete itemData.status_name
+
       const { error } = await supabase
         .from('items')
         .update(itemData)

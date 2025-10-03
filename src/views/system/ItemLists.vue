@@ -50,6 +50,15 @@
       </table>
     </div>
 
+    <div class="pagination">
+      <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">Previous</button>
+
+      <span>Page {{ currentPage }} of {{ totalPages }}</span>
+
+      <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">
+        Next
+      </button>
+    </div>
     <br />
 
     <h3>Purchase Orders (with items only)</h3>
@@ -98,8 +107,15 @@
         <input v-model="editingItem.property_no" placeholder="Property No" />
         <label>Location</label>
         <input v-model="editingItem.location" placeholder="Location" />
-        <label>Status</label>
-        <input v-model="editingItem.status" placeholder="Status" />
+        <div>
+          <label>Status</label>
+          <select v-model="editingItem.status">
+            <option disabled value="">-- Select Status --</option>
+            <option v-for="act in actions" :key="act.action_id" :value="act.action_id">
+              {{ act.action_name }}
+            </option>
+          </select>
+        </div>
         <label>Serial No</label>
         <input v-model="editingItem.serial_no" placeholder="Serial No" />
         <label>Model/Brand</label>
@@ -148,12 +164,17 @@ export default {
   data() {
     return {
       items: [],
+      actions: [],
       purchaseOrders: [],
       condition_names: [],
       showConfirm: false,
       itemToDelete: null,
       editingItem: null,
       stickerItem: null,
+      currentPage: 1,
+      pageSize: 5, // items per page
+      totalItems: 0,
+      totalPages: 0,
       itemHeaders: [
         'Item Name',
         'Property No',
@@ -171,7 +192,7 @@ export default {
     }
   },
   computed: {
-    // 🔹 Only include purchase orders that have at least one item
+    // show linked PO items only
     linkedPurchaseOrders() {
       const linkedPoNos = new Set(this.items.map((item) => item.po_no).filter(Boolean))
       return this.purchaseOrders.filter((po) => linkedPoNos.has(po.po_no))
@@ -181,20 +202,26 @@ export default {
     await this.fetchItems()
     await this.fetchPurchaseOrders()
     await this.fetchConditions()
+    await this.fetchActions()
   },
   methods: {
-    async fetchItems() {
-      const { data, error } = await supabase
+    async fetchItems(page = 1) {
+      const from = (page - 1) * this.pageSize
+      const to = from + this.pageSize - 1
+
+      const { data, error, count } = await supabase
         .from('items')
         .select(
           `
       *,
       condition:condition_id (
         condition_name
-      )
+      ),  action:status(action_name)
     `,
+          { count: 'exact' },
         )
-        .order('item_no', { ascending: true })
+        .order('date_acquired', { ascending: false })
+        .range(from, to)
 
       if (error) {
         console.error('Error fetching items:', error.message)
@@ -209,13 +236,56 @@ export default {
               width: 150,
               margin: 1,
             })
-            return { ...item, qrCode, condition_name: item.condition?.condition_name || 'N/A' }
+            return {
+              ...item,
+              qrCode,
+              condition_name: item.condition?.condition_name || 'N/A',
+              status: item.action?.action_name || 'Issued',
+            }
           } catch (e) {
             console.warn('QR generation failed for item', item, e)
-            return { ...item, qrCode: '', condition_name: item.condition?.condition_name || 'N/A' }
+            return {
+              ...item,
+              qrCode: '',
+              condition_name: item.condition?.condition_name || 'N/A',
+              status: item.action?.action_name || 'Issued',
+            }
           }
         }),
       )
+      this.totalItems = count
+      this.totalPages = Math.ceil(count / this.pageSize)
+      this.currentPage = page
+    },
+
+    async fetchDefaultStatus() {
+      const { data, error } = await supabase
+        .from('action')
+        .select('action_id')
+        .eq('action_name', 'Issued')
+        .single()
+
+      if (error) {
+        console.error('Error fetching default status:', error.message)
+      } else {
+        this.defaultStatusId = data.action_id
+        this.newItem.status = this.defaultStatusId // set default for new items
+      }
+    },
+
+    async fetchActions() {
+      const { data, error } = await supabase.from('action').select('*')
+      if (error) {
+        console.error('Error fetching actions:', error.message)
+        this.actions = []
+      } else {
+        console.log('Fetched actions:', data)
+        this.actions = data || []
+
+        // Optionally set default status to "Good"
+        const goodAction = this.actions.find((a) => a.action_name === 'Issued')
+        if (goodAction) this.newItem.status = goodAction.action_id
+      }
     },
 
     async fetchPurchaseOrders() {
@@ -244,6 +314,11 @@ export default {
       } else {
         this.condition_names = data ? data.map((c) => c.condition_name) : []
       }
+    },
+
+    goToPage(page) {
+      if (page < 1 || page > this.totalPages) return
+      this.fetchItems(page)
     },
 
     startResize(e) {
@@ -277,6 +352,9 @@ export default {
     async updateItem() {
       const itemData = { ...this.editingItem }
       delete itemData.qrCode
+      delete itemData.action
+      delete itemData.condition
+      delete itemData.condition_name
       const { error } = await supabase
         .from('items')
         .update(itemData)
@@ -332,121 +410,3 @@ export default {
   },
 }
 </script>
-
-<style scoped>
-.table-wrapper {
-  max-height: 100%; /* vertical scroll */
-  overflow-y: auto;
-  overflow-x: auto; /* 🔹 horizontal scroll */
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  -webkit-overflow-scrolling: touch; /* smooth iOS scroll */
-  display: block; /* 🔹 ensure scrolling container */
-  width: 100%;
-}
-
-/* Table layout */
-.items-table {
-  border-collapse: collapse;
-  table-layout: fixed; /* 🔹 let it expand naturally */
-  width: 100%; /* 🔹 force width to grow beyond screen */
-  min-width: 100%; /* at least 100% of wrapper */
-}
-.items-table th,
-.items-table td {
-  height: 48px;
-  width: 150px; /* initial width */
-  white-space: nowrap; /* prevent text wrapping */
-  text-overflow: ellipsis;
-  overflow: hidden;
-  border: 2px solid #ddd;
-  text-align: center;
-}
-
-/* Sticky header */
-.items-table thead th {
-  position: sticky;
-  top: 0;
-  background: #a7b982;
-  z-index: 2;
-}
-/* Column Resizer */
-.resizable {
-  position: relative;
-}
-
-.resizer {
-  position: absolute;
-  top: 0;
-  right: 0; /* only on right side */
-  width: 6px;
-  height: 100%;
-  cursor: col-resize;
-  user-select: none;
-  background: transparent;
-  z-index: 5;
-}
-
-/* Hide resizer on mobile */
-@media (max-width: 768px) {
-  .resizer {
-    display: none;
-  }
-}
-/* Badges */
-.po-badge {
-  background: #4caf50;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.85em;
-  display: inline-block;
-  white-space: nowrap;
-}
-
-.no-po {
-  background: #e0e0e0;
-  color: #555;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.85em;
-  display: inline-block;
-  white-space: nowrap;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-  .items-table th,
-  .items-table td {
-    font-size: 0.9em;
-    padding: 6px;
-    min-width: 100px;
-  }
-}
-
-@media (max-width: 768px) {
-  .items-table th,
-  .items-table td {
-    font-size: 0.8em;
-    padding: 4px;
-    min-width: 90px;
-  }
-
-  .table-wrapper {
-    max-height: 300px; /* slightly shorter on mobile */
-  }
-}
-
-@media (max-width: 480px) {
-  .items-table th,
-  .items-table td {
-    font-size: 0.75em;
-    padding: 3px;
-    min-width: 80px;
-  }
-
-  .table-wrapper {
-    max-height: 250px;
-  }
-}
-</style>
