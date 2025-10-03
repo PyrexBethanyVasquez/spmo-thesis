@@ -503,6 +503,41 @@
   display: block;
   color: #333;
 }
+.item-form label[for='status'] {
+  font-weight: 600;
+  color: #333;
+}
+
+.status-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.status-section label {
+  margin-bottom: 6.5px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.status-section select {
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.status-section select:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
 
 .po-section {
   display: flex;

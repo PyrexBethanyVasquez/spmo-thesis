@@ -27,16 +27,6 @@
       </div>
 
       <div>
-        <label for="status">Status</label>
-        <select id="status" v-model="newItem.status" required>
-          <option disabled value="">-- Select Status --</option>
-          <option v-for="action in actions" :key="action.action_id" :value="action.action_id">
-            {{ action.action_name }}
-          </option>
-        </select>
-      </div>
-
-      <div>
         <label for="serial_no">Serial No</label>
         <input id="serial_no" v-model="newItem.serial_no" placeholder="Enter serial no" />
       </div>
@@ -49,6 +39,16 @@
       <div>
         <label for="date_acquired">Date Acquired</label>
         <input id="date_acquired" v-model="newItem.date_acquired" type="date" />
+      </div>
+
+      <div class="status-section">
+        <label for="status">Status</label>
+        <select id="status" v-model="newItem.status" required>
+          <option disabled value="">-- Select Status --</option>
+          <option v-for="action in actions" :key="action.action_id" :value="action.action_id">
+            {{ action.action_name }}
+          </option>
+        </select>
       </div>
 
       <div class="condition-section">
