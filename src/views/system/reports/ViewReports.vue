@@ -44,8 +44,8 @@
             <th>Status</th>
             <th>Serial No</th>
             <th>Model/Brand</th>
-            <th>Date Acquired</th>
-            <th>PO No</th>
+            <th>Item Acquired</th>
+            <!-- <th>PO No</th> -->
             <th>Supplier</th>
             <th>Total Amount</th>
             <th>Order Date</th>
@@ -64,7 +64,7 @@
             <td>{{ item.serial_no }}</td>
             <td>{{ item.model_brand }}</td>
             <td>{{ item.date_acquired }}</td>
-            <td>{{ item.purchase_order?.po_no || '-' }}</td>
+            <!-- <td>{{ item.purchase_order?.po_no || '-' }}</td> -->
             <td>{{ item.purchase_order?.supplier || '-' }}</td>
             <td>
               {{ item.purchase_order?.total_amount ? '₱' + item.purchase_order.total_amount : '-' }}
@@ -121,8 +121,8 @@ export default {
         'Status',
         'Serial No',
         'Model/Brand',
-        'Date Acquired',
-        'PO No',
+        'Item Acquired',
+        // 'PO No',
         'Supplier',
         'Total Amount',
         'Order Date',
@@ -136,7 +136,7 @@ export default {
         item.serial_no,
         item.model_brand,
         item.date_acquired,
-        item.purchase_order?.po_no || '',
+        // item.purchase_order?.po_no || '',
         item.purchase_order?.supplier || '',
         item.purchase_order?.total_amount || '',
         item.purchase_order?.order_date || '',
