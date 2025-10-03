@@ -28,11 +28,25 @@
             class="toggle-password"
             @click="showPassword = !showPassword"
           ></ion-icon>
-
-          <!-- Error message below password field -->
-          <p v-if="passwordError" class="error-msg">{{ passwordError }}</p>
         </div>
+        <p v-if="passwordError" class="error-msg">{{ passwordError }}</p>
 
+        <div class="form-group password-group">
+          <ion-icon name="lock-closed-outline" class="input-icon"></ion-icon>
+          <input
+            :type="showConfirmPassword ? 'text' : 'password'"
+            v-model="confirmPassword"
+            placeholder="Confirm Password"
+            required
+          />
+          <ion-icon
+            :name="showConfirmPassword ? 'eye-off-outline' : 'eye-outline'"
+            class="toggle-password"
+            @click="showConfirmPassword = !showConfirmPassword"
+          ></ion-icon>
+        </div>
+        <!-- Error message below password field -->
+        <p v-if="confirmPasswordError" class="error-msg">{{ confirmPasswordError }}</p>
         <button type="submit" class="btn-submit">Create Account</button>
       </form>
     </div>
@@ -50,11 +64,14 @@ import router from '@/router/index.js'
 
 let email = ref('')
 let password = ref('')
+let confirmPassword = ref('')
 let name = ref('')
 let role = ref('user')
 let showPassword = ref(false)
+let showConfirmPassword = ref(false)
 let passwordError = ref('')
-//let unauthorizedMessage = 'You are not allowed to access this page.'
+let confirmPasswordError = ref('')
+let unauthorizedMessage = 'You are not allowed to access this page.'
 
 onMounted(async () => {
   const { data } = await supabase.auth.getUser()
@@ -77,6 +94,9 @@ onMounted(async () => {
 })
 
 async function createaccount() {
+  passwordError.value = ''
+  confirmPasswordError.value = ''
+
   if (role.value !== 'admin') {
     console.log('Unauthorized attempt to create account')
     return
@@ -96,6 +116,11 @@ async function createaccount() {
   if (!passwordRegex.test(password.value)) {
     passwordError.value =
       'Password must include at least one uppercase letter, one number, and one special character.'
+    return
+  }
+
+  if (password.value !== confirmPassword.value) {
+    confirmPasswordError.value = 'Passwords do not match.'
     return
   }
 
@@ -277,6 +302,7 @@ async function createaccount() {
 .error-msg {
   color: #ff4d4f; /* red for errors */
   font-size: 0.85rem; /* smaller text */
-  margin-top: 0.3rem; /* space below input */
+  margin-top: 0.1rem; /* space below input */
+  text-align: left; /* align left */
 }
 </style>
