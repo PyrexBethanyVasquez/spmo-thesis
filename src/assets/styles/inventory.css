@@ -157,22 +157,22 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.items-table {
+.items-table-inventory {
   width: 100%;
   border-collapse: collapse;
   background: #fff;
   min-width: 800px;
 }
 
-.items-table th,
-.items-table td {
-  padding: 1em;
+.items-table-inventory th,
+.items-table-inventory td {
+  padding: 0.95em;
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
   font-size: 0.9em;
 }
 
-.items-table th {
+.items-table-inventory th {
   background: #a7b982;
   font-weight: 600;
   color: #334155; /* slate-700 */
@@ -182,8 +182,8 @@
   text-align: center;
 }
 
-.items-table th,
-.items-table td {
+.items-table-inventory th,
+.items-table-inventory td {
   height: 48px;
   min-width: 120px; /* ensures scroll works */
   white-space: nowrap; /* prevent text wrapping */
@@ -192,13 +192,13 @@
   border: 2px solid #ddd;
 }
 
-.items-table tr {
+.items-table-inventory tr {
   color: #1e293b;
   font-size: 0.95em;
   font-weight: 400;
 }
 
-.items-table tbody tr:hover {
+.items-table-inventory tbody tr:hover {
   background: #f1f5f9;
 }
 
@@ -212,7 +212,7 @@
 }
 
 /* Table buttons */
-.items-table button {
+.items-table-inventory button {
   margin: 0 0.2em;
   padding: 0.5em 0.9em;
   border: none;
@@ -225,32 +225,64 @@
     transform 0.1s;
 }
 
-.items-table button:hover {
+.items-table-inventory button:hover {
   transform: translateY(-1px);
 }
 
-.items-table button:nth-child(1) {
+.items-table-inventory button:nth-child(1) {
   background: #3b82f6;
   color: white;
 }
-.items-table button:nth-child(1):hover {
+.items-table-inventory button:nth-child(1):hover {
   background: #2563eb;
 }
 
-.items-table button:nth-child(2) {
+.items-table-inventory button:nth-child(2) {
   background: #ef4444;
   color: white;
 }
-.items-table button:nth-child(2):hover {
+.items-table-inventory button:nth-child(2):hover {
   background: #dc2626;
 }
 
-.items-table button:nth-child(3) {
+.items-table-inventory button:nth-child(3) {
   background: #10b981;
   color: white;
 }
-.items-table button:nth-child(3):hover {
+.items-table-inventory button:nth-child(3):hover {
   background: #059669;
+}
+
+.pagination {
+  margin: 16px 0;
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 12px;
+  font-family: sans-serif;
+}
+
+.pagination button {
+  background-color: #036214;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #044c11;
+}
+
+.pagination button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  font-weight: 500;
 }
 
 /* Modal */
@@ -366,7 +398,7 @@
   color: #374151;
 }
 
-.table-wrapper .items-table .print-btn {
+.table-wrapper .items-table-inventory .print-btn {
   background-color: #4caf50; /* green */
   color: white;
   border: none;
@@ -376,7 +408,7 @@
   font-weight: 500;
 }
 
-.table-wrapper .items-table .print-btn:hover {
+.table-wrapper .items-table-inventory .print-btn:hover {
   background-color: #45a049; /* darker green on hover */
 }
 
@@ -632,7 +664,8 @@
 .badge-overlay {
   position: absolute;
   top: 0; /* stick to top of cell */
-  left: 1;
+  left: 0.75rem;
+  text-align: center;
   margin-top: 6px; /* tiny gap from top */
   background: #28a745;
   color: white;
