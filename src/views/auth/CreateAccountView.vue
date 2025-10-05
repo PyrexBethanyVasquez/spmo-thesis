@@ -71,7 +71,7 @@ let showPassword = ref(false)
 let showConfirmPassword = ref(false)
 let passwordError = ref('')
 let confirmPasswordError = ref('')
-let unauthorizedMessage = 'You are not allowed to access this page.'
+//let unauthorizedMessage = 'You are not allowed to access this page.'
 
 onMounted(async () => {
   const { data } = await supabase.auth.getUser()

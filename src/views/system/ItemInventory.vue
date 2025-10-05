@@ -282,7 +282,7 @@
             <p><strong>Property No:</strong> {{ stickerItem.property_no }}</p>
             <p><strong>Serial No:</strong> {{ stickerItem.serial_no }}</p>
             <p><strong>Location:</strong> {{ stickerItem.location }}</p>
-            <p><strong>Status:</strong> {{ stickerItem.status }}</p>
+            <p><strong>Status:</strong> {{ stickerItem.status_name }}</p>
             <p><strong>Model/Brand:</strong> {{ stickerItem.model_brand }}</p>
             <p><strong>Date Acquired:</strong> {{ stickerItem.date_acquired }}</p>
           </div>
