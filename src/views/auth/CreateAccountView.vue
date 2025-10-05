@@ -48,6 +48,7 @@
         <!-- Error message below password field -->
         <p v-if="confirmPasswordError" class="error-msg">{{ confirmPasswordError }}</p>
         <button type="submit" class="btn-submit">Create Account</button>
+        <p v-if="successMessage" class="success-msg">{{ successMessage }}</p>
       </form>
     </div>
   </div>
@@ -71,10 +72,17 @@ let showPassword = ref(false)
 let showConfirmPassword = ref(false)
 let passwordError = ref('')
 let confirmPasswordError = ref('')
-//let unauthorizedMessage = 'You are not allowed to access this page.'
+let successMessage = ref('')
 
+// Fetch current user's role
 onMounted(async () => {
-  const { data } = await supabase.auth.getUser()
+  const { data, error } = await supabase.auth.getUser()
+
+  if (error) {
+    console.error('Error getting session user:', error.message)
+    return
+  }
+
   const user = data.user
 
   if (user) {
@@ -96,12 +104,15 @@ onMounted(async () => {
 async function createaccount() {
   passwordError.value = ''
   confirmPasswordError.value = ''
+  successMessage.value = ''
 
+  // Only admin can create users
   if (role.value !== 'admin') {
     console.log('Unauthorized attempt to create account')
     return
   }
 
+  // Validate password
   if (password.value.length < 8) {
     passwordError.value = 'Password must be at least 8 characters.'
     return
@@ -110,74 +121,56 @@ async function createaccount() {
     passwordError.value = 'Password cannot exceed 20 characters.'
     return
   }
-
-  // Optional: Require uppercase, number, special char
   const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).*$/
   if (!passwordRegex.test(password.value)) {
     passwordError.value =
       'Password must include at least one uppercase letter, one number, and one special character.'
     return
   }
-
   if (password.value !== confirmPassword.value) {
     confirmPasswordError.value = 'Passwords do not match.'
     return
   }
 
-  // check if user already exists in users table
-  const { data: existingUser, error: fetchError } = await supabase
-    .from('users')
-    .select('id')
-    .eq('email', email.value)
-    .maybeSingle()
-
-  if (fetchError) {
-    console.error('Error checking existing user:', fetchError.message)
+  // Get current admin session token
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError || !sessionData.session) {
+    console.error('Unable to get session:', sessionError?.message)
     return
   }
+  const token = sessionData.session.access_token
 
-  if (existingUser) {
-    console.log('User with this email already exists.')
-    return
-  }
-
-  // create user in Supabase Auth
-  const { data, error } = await supabase.auth.signUp({
-    email: email.value,
-    password: password.value,
-    options: {
-      data: {
-        full_name: name.value, // Display Name in Auth
-        role: 'user', // metadata role
+  // Call the Edge Function
+  try {
+    const res = await fetch('https://hogtogfgaayfcaunjmyv.supabase.co/functions/v1/quick-handler', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-    },
-  })
+      body: JSON.stringify({
+        email: email.value,
+        password: password.value,
+        full_name: name.value,
+      }),
+    })
 
-  if (error) {
-    console.log('Error creating account:', error.message)
-    return
+    const result = await res.json()
+
+    if (!res.ok) {
+      console.error('Error creating user:', result.error)
+      passwordError.value = result.error
+      return
+    }
+
+    successMessage.value = 'Account created successfully!'
+    setTimeout(() => {
+      router.push('/home')
+    }, 1500)
+  } catch (err) {
+    console.error('Unexpected error:', err)
+    passwordError.value = 'Unexpected error occurred.'
   }
-
-  console.log('Account created successfully in Auth:', data)
-
-  // insert into users table after signup
-  const { error: insertError } = await supabase.from('users').upsert([
-    {
-      id: data.user.id,
-      email: email.value,
-      full_name: name.value,
-      role: 'user',
-    },
-  ])
-
-  if (insertError) {
-    console.log('Error inserting into users table:', insertError.message)
-    return
-  }
-
-  console.log('User successfully added to users table.')
-
-  router.push('/home')
 }
 </script>
 
@@ -297,6 +290,14 @@ async function createaccount() {
   min-height: 100vh;
   font-size: 1rem;
   color: #d32f2f;
+}
+
+.success-msg {
+  color: #178105; /* green */
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  text-align: center;
+  font-weight: 600;
 }
 
 .error-msg {
