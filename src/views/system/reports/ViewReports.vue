@@ -60,7 +60,7 @@
             <td>{{ item.name }}</td>
             <td>{{ item.property_no }}</td>
             <td>{{ item.location }}</td>
-            <td>{{ item.status }}</td>
+            <td>{{ item.action.action_name }}</td>
             <td>{{ item.serial_no }}</td>
             <td>{{ item.model_brand }}</td>
             <td>{{ item.date_acquired }}</td>
@@ -98,7 +98,13 @@ export default {
     async fetchItemsWithPO() {
       const { data, error } = await supabase
         .from('items')
-        .select(`*, purchase_order:purchase_order!inner(*)`)
+        .select(
+          `
+            *,
+            purchase_order:purchase_order!inner(*),
+            action:status(action_id, action_name)
+          `,
+        )
         .order('item_no', { ascending: true })
 
       if (error) return console.error(error)
@@ -132,7 +138,7 @@ export default {
         item.name,
         item.property_no,
         item.location,
-        item.status,
+        item.action?.action_name || 'Unknown',
         item.serial_no,
         item.model_brand,
         item.date_acquired,
