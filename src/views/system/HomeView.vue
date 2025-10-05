@@ -137,12 +137,42 @@ export default {
       this.totalItems = count || 0
     },
     async fetchTotalUsers() {
-      const { count, error } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
+      try {
+        // Get current session
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession()
 
-      if (error) console.error(error)
-      this.totalUsers = count || 0
+        if (sessionError || !session) {
+          console.error('No active session:', sessionError)
+          return
+        }
+
+        // Call Edge Function to get total users
+        const res = await fetch(
+          'https://hogtogfgaayfcaunjmyv.supabase.co/functions/v1/get-users-count',
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        )
+
+        if (!res.ok) {
+          console.error('Error calling edge function:', res.statusText)
+          return
+        }
+
+        const data = await res.json()
+
+        // Set totalUsers from response
+        this.totalUsers = data.totalUsers || 0
+      } catch (err) {
+        console.error('Error fetching total users:', err)
+        this.totalUsers = 0
+      }
     },
     async searchItems(query) {
       const { data } = await supabase

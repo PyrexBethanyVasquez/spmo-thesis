@@ -36,7 +36,7 @@
                 :class="{
                   'role-badge': true,
                   admin: user.role === 'Admin',
-                  user: user.role === 'Seller',
+                  user: user.role === 'Staff',
                 }"
               >
                 {{ user.role }}
@@ -55,6 +55,7 @@
     </div>
   </div>
 </template>
+
 <script>
 import { supabase } from '@/clients/supabase.js'
 
@@ -82,17 +83,32 @@ export default {
   },
   methods: {
     async fetchUsers() {
-      const { data, error } = await supabase
-        .from('users') // your custom users table
-        .select('*')
-        .order('created_at', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching users:', error.message)
+      // Get current session
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession()
+      if (sessionError || !session) {
+        console.error('No active session:', sessionError)
         return
       }
 
-      this.users = data
+      // Use the access token as Bearer
+      const res = await fetch('https://hogtogfgaayfcaunjmyv.supabase.co/functions/v1/get-users', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const { users, error } = await res.json()
+
+      if (error) {
+        console.error('Error fetching users:', error)
+        return
+      }
+
+      this.users = users
     },
     formatDate(dateStr) {
       if (!dateStr) return '-'
