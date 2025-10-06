@@ -17,6 +17,7 @@ import ItemLists from '@/views/system/ItemLists.vue'
 import Reports from '@/views/system/reports/ViewReports.vue'
 import UserLists from '@/views/system/user/UserLists.vue'
 import ForgotPassword from '@/views/auth/ForgotPassword.vue'
+import Transaction from '@/views/system/transactions/TransactionPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -62,6 +63,12 @@ const router = createRouter({
           path: 'item-lists',
           name: 'ItemLists',
           component: ItemLists,
+          meta: { role: ['admin'] },
+        },
+        {
+          path: 'item-transactions',
+          name: 'Transactions',
+          component: Transaction,
           meta: { role: ['admin'] },
         },
         {
