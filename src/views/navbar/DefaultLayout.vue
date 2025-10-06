@@ -47,6 +47,10 @@
               <ion-icon name="list-outline"></ion-icon>
               Item Lists
             </li>
+            <li @click="go('/item-transactions')">
+              <ion-icon name="swap-horizontal-outline"></ion-icon>
+              Transactions
+            </li>
             <li @click="toggleDropdown">
               <ion-icon name="people-outline"></ion-icon>
               Manage Users
@@ -125,13 +129,17 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
 /* Page wrapper */
 .page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-width: 100%;
-  position: relative;
+  height: 100%; /* lock to viewport */
+  overflow: hidden; /* no scroll here */
 }
 
 /* Header */
@@ -139,6 +147,8 @@ onMounted(async () => {
   background: #152e1a;
   color: #fff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex: 0 0 auto;
+  z-index: 100;
 }
 .nav-wrapper nav {
   width: 100%;
@@ -218,6 +228,7 @@ onMounted(async () => {
 
   /* ✅ Ensure visible by default */
   transform: translateX(0);
+  overflow-y: auto;
 }
 
 .content {
@@ -227,6 +238,7 @@ onMounted(async () => {
   background: #ffffff;
   box-sizing: border-box;
   overflow-x: hidden; /* 🔹 stop content from pushing page wider */
+  overflow-y: auto;
 }
 /* Main Content */
 .main-content {
@@ -649,10 +661,11 @@ onMounted(async () => {
 }
 /* Layout body */
 .layout-body {
+  flex: 1 1 auto;
   display: flex;
-  flex: 1;
+  overflow: hidden; /* stop scrolling here */
+  min-height: 0;
 }
-
 /* Sidebar (desktop & mobile drawer) */
 .sidebar {
   width: 250px;
@@ -680,11 +693,13 @@ onMounted(async () => {
 
 /* Main content */
 .content {
-  flex: 1;
   width: 100%;
   min-height: 100vh; /* cover full screen height */
   background: #ffffff; /* or your gradient */
   box-sizing: border-box;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .nav-left {

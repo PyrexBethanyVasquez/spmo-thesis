@@ -186,13 +186,16 @@ export default {
 .back-btn,
 .export-btn {
   border: none;
-  padding: 8px 14px;
+  padding: 8px 14px; /* same for both */
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 14px; /* same text size */
+  line-height: 1; /* consistent text spacing */
+  min-height: 36px; /* force same overall button height */
 }
 
 .back-btn {
@@ -240,7 +243,7 @@ p {
 }
 
 .reports-table th {
-  background-color: #dbdbdb;
+  background-color: #a7b982;
   font-weight: 600;
 }
 
@@ -273,5 +276,38 @@ p {
   font-size: 20px;
   font-weight: bold;
   color: #1976d2;
+}
+/* Media Queries */
+@media (max-width: 768px) {
+  .reports-page {
+    padding: 1rem;
+  }
+
+  .reports-table th,
+  .reports-table td {
+    font-size: 12px;
+    padding: 6px;
+  }
+
+  .back-btn,
+  .export-btn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .summary-cards {
+    flex-direction: column;
+  }
+
+  .summary-card {
+    width: 100%;
+  }
 }
 </style>
