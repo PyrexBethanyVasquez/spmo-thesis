@@ -272,22 +272,59 @@
 
     <!-- Sticker Print Modal -->
     <div v-if="stickerItem" class="modal">
-      <div class="modal-content sticker-modal">
-        <h3>Print Sticker</h3>
+      <div class="modal-content sticker-modal" id="stickerContent">
+        <!-- Header -->
+        <div class="sticker-header">
+          <img src="/public/csulogo.jpg" alt="Logo" class="logo" />
+          <h3>
+            STICKER FOR ITEM SUPPORTED WITH <br />
+            INVENTORY CUSTODIAN SLIP (I.C.S) | HIGH VALUE
+          </h3>
+          <img :src="stickerItem.qrCode" alt="QR Code" class="qr-code" />
+        </div>
 
-        <div class="sticker">
-          <img :src="stickerItem.qrCode" alt="QR Code" />
-          <div class="sticker-details">
-            <p><strong>Name:</strong> {{ stickerItem.name }}</p>
-            <p><strong>Property No:</strong> {{ stickerItem.property_no }}</p>
-            <p><strong>Serial No:</strong> {{ stickerItem.serial_no }}</p>
-            <p><strong>Location:</strong> {{ stickerItem.location }}</p>
-            <p><strong>Status:</strong> {{ stickerItem.status_name }}</p>
-            <p><strong>Model/Brand:</strong> {{ stickerItem.model_brand }}</p>
-            <p><strong>Date Acquired:</strong> {{ stickerItem.date_acquired }}</p>
+        <!-- Body -->
+        <div class="sticker-body">
+          <div class="sticker-row">
+            <span class="label">ITEM DESCRIPTION:</span>
+            <span class="value">{{ stickerItem.name }}</span>
+          </div>
+
+          <div class="sticker-row">
+            <span class="label">PROPERTY NO.:</span>
+            <span class="value">{{ stickerItem.property_no }}</span>
+          </div>
+
+          <div class="sticker-row">
+            <span class="label">P.O. NO.:</span>
+            <span class="value">{{ stickerItem.po_no }}</span>
+          </div>
+
+          <div class="sticker-row">
+            <span class="label">LOCATION:</span>
+            <span class="value">{{ stickerItem.location }}</span>
+          </div>
+
+          <div class="sticker-row">
+            <span class="label">DATE ACQUIRED:</span>
+            <span class="value">{{ stickerItem.date_acquired }}</span>
+          </div>
+
+          <div class="sticker-row">
+            <span class="label">SERIAL NO.:</span>
+            <span class="value">{{ stickerItem.serial_no }}</span>
+          </div>
+
+          <div class="sticker-row">
+            <span class="label">MODEL/BRAND:</span>
+            <span class="value">{{ stickerItem.model_brand }}</span>
           </div>
         </div>
 
+        <!-- Footer -->
+        <div class="sticker-footer">GOVERNMENT PROPERTY DO NOT REMOVE</div>
+
+        <!-- Modal Actions -->
         <div class="modal-actions">
           <button @click="printSticker">Print</button>
           <button @click="closeStickerModal">Close</button>
