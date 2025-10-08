@@ -9,7 +9,7 @@
         <div class="search-wrapper">
           <div class="search-bar">
             <ion-icon name="search-outline" />
-            <input type="text" v-model="searchQuery" placeholder="Search dashboard items..." />
+            <input v-model="searchQuery" placeholder="Search items..." />
           </div>
 
           <!-- Results Dropdown -->
@@ -90,103 +90,88 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { supabase } from '@/clients/supabase.js'
+import { useItemStore } from '@/stores/useItemStore'
+import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
 
-export default {
-  name: 'HomeView',
-  data() {
-    return {
-      role: 'user',
-      totalItems: 0,
-      totalUsers: 0,
-      totalReports: 0,
-      searchQuery: '',
-      searchResults: [],
-    }
-  },
-  watch: {
-    searchQuery(newVal) {
-      if (!newVal.trim()) this.searchResults = []
-      else this.searchItems(newVal)
-    },
-  },
-  async mounted() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+const store = useItemStore()
+const router = useRouter()
 
-    //console.log(user.user_metadata)
+const role = ref('user')
+const totalItems = ref(0)
+const totalUsers = ref(0)
+const totalReports = ref(0)
+const searchQuery = ref('')
+const searchResults = ref([])
 
-    if (user) {
-      const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle()
-      this.role = profile?.role || 'user'
-    }
-    if (this.role === 'admin') {
-      this.fetchTotalItems()
-      this.fetchTotalUsers()
-    }
-  },
-  methods: {
-    async fetchTotalItems() {
-      const { count } = await supabase.from('items').select('*', { count: 'exact', head: true })
-      this.totalItems = count || 0
-    },
-    async fetchTotalUsers() {
-      try {
-        // Get current session
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession()
+watch(searchQuery, (newVal) => {
+  if (!newVal.trim()) searchResults.value = []
+  else doSearch(newVal)
+})
 
-        if (sessionError || !session) {
-          console.error('No active session:', sessionError)
-          return
-        }
-
-        // Call Edge Function to get total users
-        const res = await fetch(
-          'https://hogtogfgaayfcaunjmyv.supabase.co/functions/v1/get-users-count',
-          {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-          },
-        )
-
-        if (!res.ok) {
-          console.error('Error calling edge function:', res.statusText)
-          return
-        }
-
-        const data = await res.json()
-
-        // Set totalUsers from response
-        this.totalUsers = data.totalUsers || 0
-      } catch (err) {
-        console.error('Error fetching total users:', err)
-        this.totalUsers = 0
-      }
-    },
-    async searchItems(query) {
-      const { data } = await supabase
-        .from('items')
-        .select('*')
-        .or(
-          `name.ilike.%${query}%,property_no.ilike.%${query}%,location.ilike.%${query}%,model_brand.ilike.%${query}%`,
-        )
-        .order('item_no', { ascending: true })
-      this.searchResults = data || []
-    },
-    goToItem(item) {
-      this.$router.push({ path: '/items', query: { itemId: item.item_no } })
-    },
-  },
+async function fetchTotalItems() {
+  const { count } = await supabase.from('items').select('*', { count: 'exact', head: true })
+  totalItems.value = count || 0
 }
+
+async function fetchTotalUsers() {
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
+
+    if (sessionError || !session) return
+
+    const res = await fetch(
+      'https://hogtogfgaayfcaunjmyv.supabase.co/functions/v1/get-users-count',
+      {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    )
+
+    if (res.ok) {
+      const data = await res.json()
+      totalUsers.value = data.totalUsers || 0
+    }
+  } catch (err) {
+    console.error('Error fetching total users:', err)
+    totalUsers.value = 0
+  }
+}
+
+async function doSearch() {
+  await store.searchItems(searchQuery.value)
+  searchResults.value = store.searchResults
+}
+
+function goToItem(item) {
+  router.push({ path: '/view-items', query: { itemId: item.item_no } })
+}
+
+onMounted(async () => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    role.value = profile?.role || 'user'
+  }
+
+  if (role.value === 'admin') {
+    await fetchTotalItems()
+    await fetchTotalUsers()
+  }
+})
 </script>
