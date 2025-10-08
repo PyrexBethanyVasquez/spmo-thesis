@@ -17,8 +17,13 @@ addIcons({
   'search-outline': searchOutline,
 })
 
-const app = createApp(App).use(router)
+const app = createApp(App)
 
-app.use(createPinia())
+// ✅ create pinia instance first
+const pinia = createPinia()
+
+// ✅ register pinia before router or after (order doesn’t matter, but must be before mount)
+app.use(pinia)
+app.use(router)
 
 app.mount('#app')
