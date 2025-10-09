@@ -460,7 +460,6 @@ export default {
         console.error('Error fetching actions:', error.message)
         this.actions = []
       } else {
-        console.log('Fetched actions:', data)
         this.actions = data || []
 
         // Optionally set default status to "Good"

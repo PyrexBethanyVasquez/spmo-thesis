@@ -270,12 +270,12 @@ onMounted(async () => {
 <template>
   <div class="items-page">
     <div class="page-header">
-      <h2>Item Lists</h2>
+      <h2>Item History</h2>
       <router-link to="/reports">
         <button class="reports-btn"><i class="fas fa-file-alt"></i>Go to Reports</button>
       </router-link>
     </div>
-    <p>View Items and Purchase Orders</p>
+    <p>Individual Item Transaction History</p>
 
     <hr />
     <h3>Items</h3>

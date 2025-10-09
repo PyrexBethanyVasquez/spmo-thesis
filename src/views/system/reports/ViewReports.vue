@@ -14,7 +14,7 @@
       </div>
     </div>
 
-    <p>View all items with their associated purchase orders</p>
+    <p>View all items with their associated transaction details</p>
 
     <hr />
     <br />
