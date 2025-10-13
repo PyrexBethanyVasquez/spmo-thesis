@@ -41,6 +41,7 @@
         <input id="date_acquired" v-model="newItem.date_acquired" type="date" />
       </div>
 
+      <!-- Status Section -->
       <div class="status-section">
         <label for="status">Status</label>
         <select id="status" v-model="newItem.status" required>
@@ -51,34 +52,69 @@
         </select>
       </div>
 
-      <div class="condition-section">
-        <label for="condition">Condition</label>
-        <div class="condition-inputs">
-          <select id="condition" v-model="newItem.condition_id" required>
-            <option disabled value="">-- Select Condition --</option>
-            <option v-for="cond in conditions" :key="cond.condition_id" :value="cond.condition_id">
-              {{ cond.condition_name }}
-            </option>
-          </select>
-          <button type="button" @click="showConditionForm = true">Add New Condition</button>
+      <hr class="section-divider" />
+
+      <!-- Bottom Dropdowns (Condition, PO, Department) -->
+      <div class="extra-fields-row">
+        <!-- Condition -->
+        <div class="condition-section">
+          <label for="condition">Condition</label>
+          <div class="condition-inputs">
+            <select
+              id="condition"
+              v-model="newItem.condition_id"
+              @change="handleConditionChange"
+              required
+            >
+              <option disabled value="">-- Select Condition --</option>
+              <option
+                v-for="cond in conditions"
+                :key="cond.condition_id"
+                :value="cond.condition_id"
+              >
+                {{ cond.condition_name }}
+              </option>
+
+              <!-- Add new option -->
+              <option disabled>──────────</option>
+              <option value="add-new">+ Add New Condition</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Department -->
+        <div class="dept-section">
+          <label for="department">Department</label>
+          <div class="dept-inputs">
+            <select id="department" v-model="newItem.dept_id" @change="handleDeptChange" required>
+              <option disabled value="">-- Select Department --</option>
+              <option v-for="dept in departments" :key="dept.dept_id" :value="dept.dept_id">
+                {{ dept.dept_name }}
+              </option>
+              <option disabled>──────────</option>
+              <option value="add-new">+ Add New Department</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Purchase Order -->
+        <div class="po-section">
+          <label for="po_no">Purchase Order</label>
+          <div class="po-inputs">
+            <select id="po_no" v-model="newItem.po_no" @change="handlePOChange" required>
+              <option disabled value="">-- Select Purchase Order --</option>
+              <option v-for="po in purchaseOrders" :key="po.po_no" :value="po.po_no">
+                {{ po.supplier }}
+                (₱{{ po.total_amount }})
+              </option>
+              <option disabled>──────────</option>
+              <option value="add-new">+ Add New Purchase Order</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div class="po-section">
-        <label for="po_no">Purchase Order</label>
-        <div class="po-inputs">
-          <select id="po_no" v-model="newItem.po_no" required>
-            <option disabled value="">-- Select Purchase Order --</option>
-            <option v-for="po in purchaseOrders" :key="po.po_no" :value="po.po_no">
-              <!-- {{ po.po_no }} -->
-              <span v-if="po.supplier"> {{ po.supplier }}</span>
-              <span v-if="po.total_amount"> (₱{{ po.total_amount }})</span>
-            </option>
-          </select>
-          <button type="button" @click="showPoForm = true">Add New PO</button>
-        </div>
-      </div>
-
+      <!-- Form Actions -->
       <div class="form-actions">
         <button type="submit" class="save-btn">Save Item</button>
         <button type="button" class="cancel-btn" @click="cancelAdd">Cancel</button>
@@ -86,6 +122,19 @@
     </form>
 
     <hr />
+    <br />
+
+    <!-- Search Section -->
+    <div class="search-wrapper">
+      <div class="search-bar">
+        <ion-icon name="search-outline"></ion-icon>
+        <input
+          type="text"
+          v-model="searchQuery"
+          placeholder="Search items by name, property no, or location..."
+        />
+      </div>
+    </div>
     <br />
 
     <!-- Items Table -->
@@ -97,6 +146,7 @@
             <th>Name</th>
             <th>Property No</th>
             <th>Location</th>
+            <th>Department</th>
             <th>Status</th>
             <th>Serial No</th>
             <th>Model/Brand</th>
@@ -106,10 +156,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in items" :key="item.item_no">
+          <tr v-for="item in filteredItems" :key="item.id || item.item_no">
             <td>
-              <img v-if="item.qrCode" :src="item.qrCode" alt="QR Code" class="qr-img" />
+              <div class="qr-row">
+                <img v-if="item.qrCode" :src="item.qrCode" alt="QR Code" class="qr-img" />
+                <span class="item-no">{{ item.item_no }}</span>
+              </div>
             </td>
+
             <td class="item-cell">
               <span v-if="item.item_no === recentlyAddedItemId" class="badge-overlay">
                 Recently Added
@@ -119,6 +173,7 @@
 
             <td>{{ item.property_no }}</td>
             <td>{{ item.location }}</td>
+            <td>{{ item.dept_name }}</td>
             <td>{{ item.status_name }}</td>
             <td>{{ item.serial_no }}</td>
             <td>{{ item.model_brand }}</td>
@@ -178,6 +233,17 @@
         <div class="modal-actions">
           <button @click="addCondition">Save</button>
           <button @click="showConditionForm = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showDeptForm" class="modal">
+      <div class="modal-content">
+        <h3>Add New Department</h3>
+        <input v-model="newDepartment.dept_name" placeholder="Enter department name" required />
+        <div class="modal-actions">
+          <button @click="addDepartment">Save Department</button>
+          <button @click="showDeptForm = false">Cancel</button>
         </div>
       </div>
     </div>
@@ -261,6 +327,16 @@
               </option>
             </select>
           </div>
+
+          <div>
+            <label>Department</label>
+            <select v-model="editingItem.dept_id">
+              <option disabled value="">-- Select Department --</option>
+              <option v-for="dept in departments" :key="dept.dept_id" :value="dept.dept_id">
+                {{ dept.dept_name }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <div class="modal-actions">
@@ -336,16 +412,24 @@
 
 <script>
 import { supabase } from '../../clients/supabase'
+import { useToast } from 'vue-toastification'
+import { useItemStore } from '@/stores/useItemStore'
+
 import QRCode from 'qrcode'
+
+const toast = useToast()
 
 export default {
   name: 'ItemInventory',
   data() {
     return {
       items: [],
+      searchQuery: '',
       purchaseOrders: [],
       conditions: [],
       actions: [],
+      departments: [],
+      showDeptForm: false,
       showPoForm: false,
       showConditionForm: false,
       showConfirm: false,
@@ -365,6 +449,7 @@ export default {
         date_acquired: '',
         po_no: '',
         condition_id: '',
+        dept_id: '',
       },
       newPurchaseOrder: {
         supplier: '',
@@ -374,17 +459,55 @@ export default {
       newCondition: {
         condition_name: '',
       },
+      newDepartment: {
+        dept_name: '',
+      },
 
       editingItem: null,
       stickerItem: null,
       showAddForm: false, // <<-- controls visibility
     }
   },
+
+  computed: {
+    filteredItems() {
+      if (!this.searchQuery || this.searchQuery.trim() === '') {
+        return this.items
+      }
+
+      const query = this.searchQuery.toLowerCase()
+
+      return this.items.filter((item) => {
+        return (
+          item.item_no?.toLowerCase().includes(query) ||
+          item.name?.toLowerCase().includes(query) ||
+          item.property_no?.toLowerCase().includes(query) ||
+          item.location?.toLowerCase().includes(query) ||
+          item.status_name?.toLowerCase().includes(query) ||
+          item.serial_no?.toLowerCase().includes(query) ||
+          item.model_brand?.toLowerCase().includes(query)
+        )
+      })
+    },
+  },
+
+  watch: {
+    async searchQuery(newVal) {
+      if (!newVal || !newVal.trim()) {
+        // if search cleared, reload paginated items
+        await this.fetchItems(this.currentPage)
+        return
+      }
+      await this.doSearch(newVal)
+    },
+  },
+
   async mounted() {
     await this.fetchItems()
     await this.fetchPurchaseOrders()
     await this.fetchConditions()
     await this.fetchActions()
+    await this.fetchDepartments()
     const savedId = localStorage.getItem('recentlyAddedItemId')
     if (savedId) {
       this.recentlyAddedItemId = savedId
@@ -400,7 +523,8 @@ export default {
         .select(
           `
       *,
-      action:status(action_id,action_name)
+      action:status(action_id,action_name),
+      department:dept_id(dept_id,dept_name)
     `,
           { count: 'exact' },
         )
@@ -408,7 +532,7 @@ export default {
         .range(from, to)
 
       if (error) {
-        console.error('Error fetching items:', error.message)
+        toast.error('Error fetching items:', error.message)
         return
       }
 
@@ -425,6 +549,8 @@ export default {
               qrCode,
               status: item.action?.action_id || null,
               status_name: item.action?.action_name || 'Issued',
+              dept_id: item.department?.dept_id || '',
+              dept_name: item.department?.dept_name || 'N/A',
               condition_name: item.condition?.condition_name || 'N/A',
             }
           } catch (e) {
@@ -447,7 +573,7 @@ export default {
         .single()
 
       if (error) {
-        console.error('Error fetching default status:', error.message)
+        toast.error('Error fetching default status:', error.message)
       } else {
         this.defaultStatusId = data.action_id
         this.newItem.status = this.defaultStatusId // set default for new items
@@ -457,12 +583,12 @@ export default {
     async fetchActions() {
       const { data, error } = await supabase.from('action').select('*')
       if (error) {
-        console.error('Error fetching actions:', error.message)
+        toast.error('Error fetching actions:', error.message)
         this.actions = []
       } else {
         this.actions = data || []
 
-        // Optionally set default status to "Good"
+        // set default status to "Issued"
         const goodAction = this.actions.find((a) => a.action_name === 'Issued')
         if (goodAction) this.newItem.status = goodAction.action_id
       }
@@ -472,7 +598,7 @@ export default {
       const { data, error } = await supabase.from('purchase_order').select('*')
 
       if (error) {
-        console.error('Error fetching purchase orders:', error.message)
+        toast.error('Error fetching purchase orders:', error.message)
         this.purchaseOrders = [] // fallback
       } else {
         this.purchaseOrders = data || [] // never null
@@ -482,10 +608,24 @@ export default {
     async fetchConditions() {
       const { data, error } = await supabase.from('condition').select('*')
       if (error) {
-        console.error('Error fetching conditions:', error.message)
+        toast.error('Error fetching conditions:', error.message)
         this.conditions = []
       } else {
         this.conditions = data || []
+      }
+    },
+
+    async fetchDepartments() {
+      const { data, error } = await supabase
+        .from('department')
+        .select('*')
+        .order('dept_name', { ascending: true })
+
+      if (error) {
+        toast.error('Error fetching departments:', error.message)
+        this.departments = []
+      } else {
+        this.departments = data || []
       }
     },
 
@@ -496,10 +636,11 @@ export default {
         .select()
 
       if (error) {
-        alert('Error adding purchase order: ' + error.message)
+        toast.error('Error adding purchase order: ' + error.message)
         return
       }
 
+      toast.success('New Purchase Order added successfully!')
       // Refresh PO list
       await this.fetchPurchaseOrders()
 
@@ -517,10 +658,11 @@ export default {
       const { data, error } = await supabase.from('condition').insert([this.newCondition]).select()
 
       if (error) {
-        alert('Error adding condition: ' + error.message)
+        toast.error('Error adding condition: ' + error.message)
         return
       }
 
+      toast.success('New Condition added successfully!')
       // Refresh conditions list
       await this.fetchConditions()
 
@@ -535,72 +677,225 @@ export default {
     },
 
     async addItem() {
-      const { data, error } = await supabase.from('items').insert([this.newItem]).select('*')
-      if (error) {
-        alert('Error adding item: ' + error.message)
-      } else {
-        console.log('Inserted item:', data)
-        await this.fetchItems()
-
-        if (data && data.length > 0) {
-          const newId = data[0].id || data[0].item_no
-          this.recentlyAddedItemId = newId
-          localStorage.setItem('recentlyAddedItemId', newId)
-        }
-        this.newItem = {
-          name: '',
-          property_no: '',
-          location: '',
-          status: this.defaultStatusId,
-          serial_no: '',
-          model_brand: '',
-          date_acquired: '',
-        }
-        this.showForm = false // hide form after add
+      const store = useItemStore()
+      const cleanItem = {
+        item_no: await store.generateItemNo(),
+        name: this.newItem.name,
+        property_no: this.newItem.property_no,
+        location: this.newItem.location,
+        status: this.newItem.status || this.defaultStatusId,
+        serial_no: this.newItem.serial_no,
+        model_brand: this.newItem.model_brand,
+        date_acquired: this.newItem.date_acquired || null,
+        po_no: this.newItem.po_no || null,
+        condition_id: this.newItem.condition_id || null,
+        dept_id: this.newItem.dept_id || null,
       }
-    },
 
-    goToPage(page) {
-      if (page < 1 || page > this.totalPages) return
-      this.fetchItems(page)
-    },
+      // 1️⃣ Insert the new item
+      const { data: itemData, error: itemError } = await supabase
+        .from('items')
+        .insert([cleanItem])
+        .select('*')
 
-    cancelAdd() {
-      this.showAddForm = false
+      if (itemError) {
+        console.error('Error adding item: ' + itemError.message)
+        toast.error('Failed to add item: ' + itemError.message)
+        return
+      }
+
+      toast.success('New Item added successfully!')
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
+      if (userError) {
+        console.error('Failed to get admin user:', userError)
+      }
+      const newItemId = itemData[0].id || itemData[0].item_no
+      this.recentlyAddedItemId = newItemId
+      localStorage.setItem('recentlyAddedItemId', newItemId)
+
+      // 2️⃣ Automatically create a transaction for this item
+      const transaction = {
+        item_no: newItemId,
+        dept_id: cleanItem.dept_id,
+        action_id: cleanItem.status, // current status of the item
+        user_id: user?.id || null,
+
+        date: new Date().toISOString(),
+      }
+
+      const { error: txnError } = await supabase.from('transaction').insert([transaction])
+
+      if (txnError) {
+        console.error('Failed to create transaction:', txnError.message)
+        toast.error('Item added but failed to record transaction')
+      } else {
+        toast.success('Item and transaction added successfully!')
+      }
+
+      // 3️⃣ Refresh items
+      await this.fetchItems()
+
+      // 4️⃣ Reset form
       this.newItem = {
         name: '',
         property_no: '',
         location: '',
-        status: '',
+        status: this.defaultStatusId,
         serial_no: '',
         model_brand: '',
         date_acquired: '',
+        po_no: '',
+        condition_id: '',
+        dept_id: '',
+      }
+      this.showAddForm = false
+    },
+    async addDepartment() {
+      if (!this.newDepartment.dept_name.trim()) return
+
+      const { error } = await supabase
+        .from('department')
+        .insert([{ dept_name: this.newDepartment.dept_name.trim() }])
+
+      if (error) {
+        console.error('Error adding department:', error.message)
+        toast.error('Failed to add department.')
+      } else {
+        toast.success('Department added successfully!')
+        this.newDepartment.dept_name = ''
+        this.showDeptForm = false
+        await this.fetchDepartments() // refresh dropdown
       }
     },
 
-    editItem(item) {
-      this.editingItem = { ...item }
+    async handleConditionChange() {
+      if (this.newItem.condition_id === 'add-new') {
+        this.showConditionForm = true // open modal or inline form
+        this.newItem.condition_id = '' // reset selection to avoid accidental saving
+      }
+    },
+    async handlePOChange() {
+      if (this.newItem.po_no === 'add-new') {
+        this.showPoForm = true // open modal or inline form
+        this.newItem.po_no = '' // reset selection to avoid accidental saving
+      }
+    },
+    async handleDeptChange() {
+      if (this.newItem.dept_id === 'add-new') {
+        this.showDeptForm = true // open modal or inline form
+        this.newItem.dept_id = '' // reset selection to avoid accidental saving
+      }
     },
 
     async updateItem() {
-      const itemData = { ...this.editingItem }
-      delete itemData.qrCode
-      delete itemData.action
-      delete itemData.condition_name
-      delete itemData.status_name
+      try {
+        // Prepare the updated item data
+        const itemData = {
+          name: this.editingItem.name,
+          property_no: this.editingItem.property_no,
+          location: this.editingItem.location,
+          status: this.editingItem.status,
+          serial_no: this.editingItem.serial_no,
+          model_brand: this.editingItem.model_brand,
+          date_acquired: this.editingItem.date_acquired,
+          po_no: this.editingItem.po_no,
+          condition_id: this.editingItem.condition_id,
+          dept_id: this.editingItem.dept_id,
+        }
 
-      const { error } = await supabase
-        .from('items')
-        .update(itemData)
-        .eq('item_no', this.editingItem.item_no)
-      if (error) {
-        alert('Error updating item: ' + error.message)
-      } else {
+        // 1️⃣ Update the item
+        const { error: updateError } = await supabase
+          .from('items')
+          .update(itemData)
+          .eq('item_no', this.editingItem.item_no)
+
+        if (updateError) {
+          console.error('Error updating item:', updateError.message)
+          toast.error('Error updating item: ' + updateError.message)
+          return
+        }
+
+        // 2️⃣ Get the logged-in user
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        const userId = user?.id || null // fallback to null if not found
+
+        // 3️⃣ Record the transaction
+        const transactionPayload = {
+          item_no: this.editingItem.item_no, // change to item_id if your table expects it
+          action_id: this.editingItem.status, // should match your action_id column
+          user_id: userId,
+          date: new Date().toISOString(),
+        }
+
+        console.log('Transaction payload:', transactionPayload)
+
+        const { error: txnError } = await supabase.from('transaction').insert(transactionPayload)
+
+        if (txnError) {
+          console.error('Transaction insert failed:', txnError.message)
+          toast.error('Item updated but failed to record transaction')
+        } else {
+          toast.success('Item updated and transaction recorded!')
+        }
+
+        // 4️⃣ Refresh item list
         await this.fetchItems()
         this.editingItem = null
+      } catch (err) {
+        console.error('Unexpected error:', err)
+        toast.error('Something went wrong while updating the item')
       }
     },
+    async doSearch(query) {
+      const { data, error } = await supabase
+        .from('items')
+        .select(
+          `
+        *,
+        condition:condition_id (condition_name),
+        action:status(action_name),
+        department:dept_id(dept_name)
+      `,
+        )
+        .or(
+          `item_no.ilike."%${query}%",name.ilike."%${query}%",property_no.ilike."%${query}%",location.ilike."%${query}%",model_brand.ilike."%${query}%"`,
+        )
 
+      if (error) {
+        console.error('Error searching items:', error.message)
+        return
+      }
+
+      this.items = await Promise.all(
+        data.map(async (item) => {
+          const idForQr = item.item_no ?? item.id ?? ''
+          const qrCode = await QRCode.toDataURL(String(idForQr), { width: 150, margin: 1 })
+          return {
+            ...item,
+            qrCode,
+            condition_name: item.condition?.condition_name || 'N/A',
+            status: item.action?.action_name || 'Issued',
+            dept_id: item.department?.dept_id || '',
+            dept_name: item.department?.dept_name || 'N/A',
+          }
+        }),
+      )
+
+      this.totalPages = 1
+      this.currentPage = 1
+    },
+    editItem(item) {
+      this.editingItem = {
+        ...item,
+        dept_id: item.dept_id || '',
+      }
+    },
     askDelete(itemId) {
       this.itemToDelete = itemId
       this.showConfirm = true
@@ -619,6 +914,24 @@ export default {
 
       this.showConfirm = false
       this.itemToDelete = null
+    },
+
+    goToPage(page) {
+      if (page < 1 || page > this.totalPages) return
+      this.fetchItems(page)
+    },
+
+    cancelAdd() {
+      this.showAddForm = false
+      this.newItem = {
+        name: '',
+        property_no: '',
+        location: '',
+        status: '',
+        serial_no: '',
+        model_brand: '',
+        date_acquired: '',
+      }
     },
 
     cancelDelete() {

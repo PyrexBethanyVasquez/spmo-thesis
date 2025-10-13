@@ -27,6 +27,7 @@
             <td>{{ item.name }}</td>
             <td>{{ item.property_no }}</td>
             <td>{{ item.location }}</td>
+            <td>{{ item.dept_name }}</td>
             <td>{{ item.status }}</td>
             <td>{{ item.serial_no }}</td>
             <td>{{ item.model_brand }}</td>
@@ -196,7 +197,10 @@
 
 <script>
 import { supabase } from '../../clients/supabase'
+import { useToast } from 'vue-toastification'
 import QRCode from 'qrcode'
+
+const toast = useToast()
 
 export default {
   name: 'ItemInventory',
@@ -218,6 +222,7 @@ export default {
         'Item Name',
         'Property No',
         'Location',
+        'Department',
         'Status',
         'Serial No',
         'Model/Brand',
@@ -243,6 +248,7 @@ export default {
     await this.fetchConditions()
     await this.fetchActions()
     await this.fetchDefaultStatus()
+    await this.fetchDepartments()
   },
   methods: {
     async fetchItems(page = 1) {
@@ -256,15 +262,15 @@ export default {
       *,
       condition:condition_id (
         condition_name
-      ),  action:status(action_name)
+      ),  action:status(action_id,action_name),department:dept_id(dept_name)
     `,
           { count: 'exact' },
         )
-        .order('date_acquired', { ascending: false })
+        .order('updated_at', { ascending: false })
         .range(from, to)
 
       if (error) {
-        console.error('Error fetching items:', error.message)
+        toast.error('Error fetching items:', error.message)
         return
       }
 
@@ -281,6 +287,11 @@ export default {
               qrCode,
               condition_name: item.condition?.condition_name || 'N/A',
               status: item.action?.action_name || 'Issued',
+              dept_id: item.department?.dept_id || item.dept_id || '',
+              dept_name:
+                item.department?.dept_name ||
+                this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
+                'N/A',
             }
           } catch (e) {
             console.warn('QR generation failed for item', item, e)
@@ -289,6 +300,11 @@ export default {
               qrCode: '',
               condition_name: item.condition?.condition_name || 'N/A',
               status: item.action?.action_name || 'Issued',
+              dept_id: item.department?.dept_id || item.dept_id || '',
+              dept_name:
+                item.department?.dept_name ||
+                this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
+                'N/A',
             }
           }
         }),
@@ -296,6 +312,20 @@ export default {
       this.totalItems = count
       this.totalPages = Math.ceil(count / this.pageSize)
       this.currentPage = page
+    },
+
+    async fetchDepartments() {
+      const { data, error } = await supabase
+        .from('department')
+        .select('*')
+        .order('dept_name', { ascending: true })
+
+      if (error) {
+        toast.error('Error fetching departments:', error.message)
+        this.departments = []
+      } else {
+        this.departments = data || []
+      }
     },
 
     async fetchDefaultStatus() {
@@ -306,25 +336,24 @@ export default {
         .single()
 
       if (error) {
-        console.error('Error fetching default status:', error.message)
+        toast.error('Error fetching default status:', error.message)
       } else {
         this.defaultStatusId = data.action_id
-        this.newItem.status = this.defaultStatusId // set default for new items
+        //this.newItem.status = this.defaultStatusId // set default for new items
       }
     },
 
     async fetchActions() {
       const { data, error } = await supabase.from('action').select('*')
       if (error) {
-        console.error('Error fetching actions:', error.message)
+        toast.error('Error fetching actions:', error.message)
         this.actions = []
       } else {
-        console.log('Fetched actions:', data)
         this.actions = data || []
 
         // Optionally set default status to "Issued"
-        const goodAction = this.actions.find((a) => a.action_name === 'Issued')
-        if (goodAction) this.newItem.status = goodAction.action_id
+        // const goodAction = this.actions.find((a) => a.action_name === 'Issued')
+        // if (goodAction) this.newItem.status = goodAction.action_id
       }
     },
 
@@ -335,7 +364,7 @@ export default {
         .order('po_no', { ascending: true })
 
       if (error) {
-        console.error('Error fetching purchase orders:', error.message)
+        toast.error('Error fetching purchase orders:', error.message)
         this.purchaseOrders = []
       } else {
         this.purchaseOrders = data || []
@@ -349,11 +378,77 @@ export default {
         .order('condition_name', { ascending: true })
 
       if (error) {
-        console.error('Error fetching conditions:', error.message)
+        toast.error('Error fetching conditions:', error.message)
         this.condition_names = []
       } else {
         this.condition_names = data ? data.map((c) => c.condition_name) : []
       }
+    },
+
+    async updateItem() {
+      try {
+        // Prepare the updated item data
+        const itemData = {
+          name: this.editingItem.name,
+          property_no: this.editingItem.property_no,
+          location: this.editingItem.location,
+          status: this.editingItem.status,
+          serial_no: this.editingItem.serial_no,
+          model_brand: this.editingItem.model_brand,
+          date_acquired: this.editingItem.date_acquired,
+          po_no: this.editingItem.po_no,
+          condition_id: this.editingItem.condition_id,
+          dept_id: this.editingItem.dept_id,
+        }
+
+        // 1️⃣ Update the item
+        const { error: updateError } = await supabase
+          .from('items')
+          .update(itemData)
+          .eq('item_no', this.editingItem.item_no)
+
+        if (updateError) {
+          console.error('Error updating item:', updateError.message)
+          toast.error('Error updating item: ' + updateError.message)
+          return
+        }
+
+        // 2️⃣ Get the logged-in user
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        const userId = user?.id || null // fallback to null if not found
+
+        // 3️⃣ Record the transaction
+        const transactionPayload = {
+          item_no: this.editingItem.item_no, // change to item_id if your table expects it
+          action_id: this.editingItem.status, // should match your action_id column
+          dept_id: this.editingItem.dept_id,
+          user_id: userId,
+          date: new Date().toISOString(),
+        }
+
+        console.log('Transaction payload:', transactionPayload)
+
+        const { error: txnError } = await supabase.from('transaction').insert(transactionPayload)
+
+        if (txnError) {
+          console.error('Transaction insert failed:', txnError.message)
+          toast.error('Item updated but failed to record transaction')
+        } else {
+          toast.success('Item updated and transaction recorded!')
+        }
+
+        // 4️⃣ Refresh item list
+        await this.fetchItems()
+        this.editingItem = null
+      } catch (err) {
+        console.error('Unexpected error:', err)
+        toast.error('Something went wrong while updating the item')
+      }
+    },
+    editItem(item) {
+      this.editingItem = { ...item, status: item.action?.action_id || '' }
     },
 
     goToPage(page) {
@@ -383,28 +478,6 @@ export default {
 
       document.addEventListener('mousemove', doDrag)
       document.addEventListener('mouseup', stopDrag)
-    },
-
-    editItem(item) {
-      this.editingItem = { ...item }
-    },
-
-    async updateItem() {
-      const itemData = { ...this.editingItem }
-      delete itemData.qrCode
-      delete itemData.action
-      delete itemData.condition
-      delete itemData.condition_name
-      const { error } = await supabase
-        .from('items')
-        .update(itemData)
-        .eq('item_no', this.editingItem.item_no)
-      if (error) {
-        alert('Error updating item: ' + error.message)
-      } else {
-        await this.fetchItems()
-        this.editingItem = null
-      }
     },
 
     askDelete(itemId) {

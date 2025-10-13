@@ -3,8 +3,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useItemStore } from '@/stores/useItemStore'
 import QRCode from 'qrcode'
 import { supabase } from '../../clients/supabase'
+import { useToast } from 'vue-toastification'
 
 const store = useItemStore()
+const toast = useToast()
 
 // Pagination
 const currentPage = ref(1)
@@ -21,12 +23,14 @@ const showConfirm = ref(false)
 const itemToDelete = ref(null)
 const editingItem = ref(null)
 const stickerItem = ref(null)
+const departments = ref([])
 
 // Table headers
 const itemHeaders = [
   'Item Name',
   'Property No',
   'Location',
+  'Department',
   'Status',
   'Serial No',
   'Model/Brand',
@@ -62,16 +66,17 @@ async function fetchItems(page = 1) {
     .select(
       `
       *,
-      condition:condition_id(condition_name),
-      action:status(action_name)
+      condition:condition_id (
+        condition_name
+      ),  action:status(action_id,action_name),department:dept_id(dept_name)
     `,
       { count: 'exact' },
     )
-    .order('date_acquired', { ascending: false })
+    .order('updated_at', { ascending: false })
     .range(from, to)
 
   if (error) {
-    console.error('Error fetching items:', error.message)
+    toast.error('Error fetching items:', error.message)
     return
   }
 
@@ -87,7 +92,12 @@ async function fetchItems(page = 1) {
           ...item,
           qrCode,
           condition_name: item.condition?.condition_name || 'N/A',
-          status_name: item.action?.action_name || 'Issued',
+          status: item.action?.action_name || 'Issued',
+          dept_id: item.department?.dept_id || item.dept_id || '',
+          dept_name:
+            item.department?.dept_name ||
+            this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
+            'N/A',
         }
       } catch (e) {
         console.warn('QR generation failed for item', item, e)
@@ -95,11 +105,17 @@ async function fetchItems(page = 1) {
           ...item,
           qrCode: '',
           condition_name: item.condition?.condition_name || 'N/A',
-          status_name: item.action?.action_name || 'Issued',
+          status: item.action?.action_name || 'Issued',
+          dept_id: item.department?.dept_id || item.dept_id || '',
+          dept_name:
+            item.department?.dept_name ||
+            this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
+            'N/A',
         }
       }
     }),
   )
+
   totalItems.value = count
   totalPages.value = Math.ceil(count / pageSize.value)
   currentPage.value = page
@@ -148,10 +164,23 @@ async function fetchConditions() {
     .select('condition_name')
     .order('condition_name', { ascending: true })
   if (error) {
-    console.error('Error fetching conditions:', error.message)
+    toast.error('Error fetching conditions:', error.message)
     conditionNames.value = []
   } else {
     conditionNames.value = data ? data.map((c) => c.condition_name) : []
+  }
+}
+async function fetchDepartments() {
+  const { data, error } = await supabase
+    .from('department')
+    .select('*')
+    .order('dept_name', { ascending: true })
+
+  if (error) {
+    toast.error('Error fetching departments:', error.message)
+    departments.value = []
+  } else {
+    departments.value = data || []
   }
 }
 
@@ -187,27 +216,47 @@ function goToPage(page) {
 
 // Actions
 function editItem(item) {
-  editingItem.value = { ...item }
-}
-
-async function updateItem() {
-  const itemData = { ...editingItem.value }
-  delete itemData.qrCode
-  delete itemData.action
-  delete itemData.condition
-  delete itemData.condition_name
-
-  const { error } = await supabase
-    .from('items')
-    .update(itemData)
-    .eq('item_no', editingItem.value.item_no)
-  if (error) {
-    alert('Error updating item: ' + error.message)
-  } else {
-    await fetchItems()
-    editingItem.value = null
+  editingItem.value = {
+    ...item,
+    dept_id: item.dept_id || '',
   }
 }
+
+// async function updateItem() {
+//   if (!editingItem.value) return
+
+//   const itemData = {
+//     name: editingItem.value.name,
+//     property_no: editingItem.value.property_no,
+//     location: editingItem.value.location,
+//     status: editingItem.value.status, // keep action_id for DB
+//     serial_no: editingItem.value.serial_no,
+//     model_brand: editingItem.value.model_brand,
+//     date_acquired: editingItem.value.date_acquired,
+//     po_no: editingItem.value.po_no,
+//     condition_id: editingItem.value.condition_id,
+//     dept_id: editingItem.value.dept_id,
+//   }
+
+//   const { error } = await supabase
+//     .from('items')
+//     .update(itemData)
+//     .eq('item_no', editingItem.value.item_no)
+
+//   if (error) {
+//     console.error('Error updating item:', error.message)
+//     toast.error('Error updating item: ' + error.message)
+//     return
+//   }
+
+//   toast.success('Item updated successfully!')
+
+//   // Refresh the items list
+//   await fetchItems()
+
+//   // Clear editing item
+//   editingItem.value = null
+// }
 
 function askDelete(itemId) {
   itemToDelete.value = itemId
@@ -259,11 +308,13 @@ function printSticker() {
 
 // Lifecycle
 onMounted(async () => {
-  await fetchItems()
+  await fetchDepartments()
   await fetchPurchaseOrders()
   await fetchConditions()
   await fetchActions()
   await fetchDefaultStatus(newItem)
+
+  await fetchItems()
 })
 </script>
 
@@ -296,6 +347,7 @@ onMounted(async () => {
             <td>{{ item.name }}</td>
             <td>{{ item.property_no }}</td>
             <td>{{ item.location }}</td>
+            <td>{{ item.dept_name }}</td>
             <td>{{ item.status_name }}</td>
             <td>{{ item.serial_no }}</td>
             <td>{{ item.model_brand }}</td>

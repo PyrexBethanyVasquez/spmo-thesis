@@ -649,3 +649,28 @@ body {
   align-items: center; /* ✅ aligns hamburger & logo vertically */
   gap: 0.75rem; /* space between hamburger and logo */
 }
+
+.system-overview {
+  margin-top: 2rem;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.overview-box {
+  display: flex;
+  align-items: center;
+  background: #f9fafb;
+  padding: 1rem;
+  border-radius: 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.overview-box ion-icon {
+  font-size: 1.8rem;
+  color: #4f46e5;
+  margin-right: 0.75rem;
+}

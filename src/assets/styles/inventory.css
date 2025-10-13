@@ -26,12 +26,43 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1em;
-  margin-bottom: 2em;
   background: #ffffff;
   padding: 1.5em;
   border-radius: 0.75em;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
+}
+
+.qr-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qr-img {
+  width: 60px;
+  height: 60px;
+}
+.item-no {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Divider Between Status and Dropdowns */
+.section-divider {
+  grid-column: 1 / -1; /* spans full width */
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 1em 0;
+}
+
+select option[value='add-new'] {
+  font-style: italic;
+  color: #2563eb;
+  font-weight: 500;
+}
+
+select option[disabled] {
+  color: #888;
 }
 
 .item-form label {
@@ -622,6 +653,13 @@
   color: #333;
 }
 
+.item-form label[for='department'] {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1px;
+  display: block;
+}
+
 .status-section {
   display: flex;
   flex-direction: column;
@@ -720,6 +758,21 @@
   font-size: 0.85em;
 }
 
+.condition-inputs select option[value='add-new'] {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.po-inputs select option[value='add-new'] {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.dept-inputs select option[value='add-new'] {
+  font-weight: 600;
+  color: #2563eb;
+}
+
 .condition-section {
   display: flex;
   flex-direction: column;
@@ -736,7 +789,7 @@
 
 .condition-inputs select {
   flex: 1;
-  padding: 8px 10px;
+  padding: 8px 20px;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 14px;
@@ -774,6 +827,113 @@
 
   .condition-section select,
   .condition-section button {
+    width: 100%;
+  }
+}
+
+.dept-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dept-inputs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dept-inputs select {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border 0.2s;
+}
+
+.dept-inputs select:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.dept-inputs button {
+  padding: 6px 12px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.dept-inputs button:hover {
+  background-color: #1d4ed8;
+}
+
+@media (max-width: 600px) {
+  .dept-section .dept-inputs {
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0; /* reset margin on small screens */
+  }
+
+  .dept-section select,
+  .dept-section button {
+    width: 100%;
+  }
+}
+/* Group below the Status */
+.extra-fields-row {
+  grid-column: 1 / -1; /* span full width under Status */
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5em;
+  flex-wrap: wrap; /* allow wrapping on smaller screens */
+  margin-top: 0.5em;
+  margin-bottom: 2em;
+}
+
+/* Each section (Condition, PO, Department) */
+.extra-fields-row > div {
+  flex: 1;
+  min-width: 250px; /* ensure they don't get too narrow */
+}
+
+/* Label styling (optional for uniform look) */
+.extra-fields-row label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+/* Responsive behavior for tablets and smaller screens */
+@media (max-width: 1024px) {
+  .extra-fields-row {
+    gap: 1em;
+  }
+  .extra-fields-row > div {
+    min-width: 200px;
+  }
+}
+
+/* On small screens, stack vertically */
+@media (max-width: 768px) {
+  .extra-fields-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .extra-fields-row > div {
     width: 100%;
   }
 }
