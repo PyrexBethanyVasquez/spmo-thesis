@@ -5,6 +5,8 @@ import './assets/styles/login.css'
 import './assets/styles/itemlists.css'
 import './assets/styles/userlists.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
+import Toast from 'vue-toastification'
+import 'vue-toastification/dist/index.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -25,5 +27,5 @@ const pinia = createPinia()
 // ✅ register pinia before router or after (order doesn’t matter, but must be before mount)
 app.use(pinia)
 app.use(router)
-
+app.use(Toast)
 app.mount('#app')
