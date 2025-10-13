@@ -14,7 +14,7 @@ export const useItemStore = defineStore('items', {
           `
       *,
       condition:condition_id(condition_name),
-      action:status(action_name)
+      action:status(action_name),department:dept_id(dept_name)
     `,
         )
         .order('item_no', { ascending: true })
@@ -26,6 +26,11 @@ export const useItemStore = defineStore('items', {
           condition_name: item.condition?.condition_name || 'N/A',
           status_id: item.status, // keep raw id for editing
           status_name: item.action?.action_name || 'Issued', // keep readable string
+          dept_id: item.dept_id,
+          dept_name:
+            item.department?.dept_name ||
+            this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
+            'N/A',
         }))
       }
     },
@@ -37,7 +42,7 @@ export const useItemStore = defineStore('items', {
           `
       *,
       condition:condition_id(condition_name),
-      action:status(action_name)
+      action:status(action_name),department:dept_id(dept_name)
     `,
         )
         .or(
@@ -51,11 +56,28 @@ export const useItemStore = defineStore('items', {
           condition_name: item.condition?.condition_name || 'N/A',
           status_id: item.status,
           status_name: item.action?.action_name || 'Issued',
+          dept_id: item.dept_id,
+          dept_name:
+            item.department?.dept_name ||
+            this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
+            'N/A',
         }))
       }
     },
     clearSearch() {
       this.searchResults = []
+    },
+    async generateItemNo() {
+      const year = new Date().getFullYear().toString().slice(-2) // e.g. '25'
+
+      // fetch count of existing items for this year
+      const { count } = await supabase
+        .from('items')
+        .select('item_no', { count: 'exact', head: true })
+        .ilike('item_no', `ITM-${year}-%`)
+
+      const next = (count + 1).toString().padStart(5, '0')
+      return `ITM-${year}-${next}`
     },
   },
 })
