@@ -16,11 +16,13 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.1",
     "@supabase/supabase-js": "^2.57.4",
+    "chart.js": "^4.5.0",
     "ionicons": "^8.0.13",
     "pinia": "^3.0.3",
     "qrcode": "^1.5.4",
     "vue": "^3.5.18",
     "vue-router": "^4.5.1",
+    "vue-toastification": "^2.0.0-rc.5",
     "vue3-print-nb": "^0.1.4"
   },
   "devDependencies": {
