@@ -674,3 +674,51 @@ body {
   color: #4f46e5;
   margin-right: 0.75rem;
 }
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap; /* Helps when space is tight */
+}
+
+.datetime {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+
+  color: #fff;
+  transition: all 0.3s ease;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.datetime:hover {
+  color: #ffcc00;
+}
+
+/* 📱 Responsive adjustments */
+@media (max-width: 768px) {
+  .datetime {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-right {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .datetime {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    width: 100%;
+    text-align: left;
+  }
+}

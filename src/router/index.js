@@ -16,7 +16,7 @@ import ItemInventory from '@/views/system/ItemInventory.vue'
 import ItemLists from '@/views/system/ItemLists.vue'
 import Reports from '@/views/system/reports/ViewReports.vue'
 import UserLists from '@/views/system/user/UserLists.vue'
-import ForgotPassword from '@/views/auth/ForgotPassword.vue'
+//import ForgotPassword from '@/views/auth/ForgotPassword.vue'
 import Transaction from '@/views/system/transactions/TransactionPage.vue'
 import ViewItemInfo from '@/views/itemview/ViewItemInfo.vue'
 
@@ -34,10 +34,20 @@ const router = createRouter({
       name: 'Unauthorized',
       component: UnauthorizedView,
     },
+    // {
+    //   path: '/forgot-password',
+    //   name: 'ForgotPassword',
+    //   component: ForgotPassword,
+    // },
     {
       path: '/forgot-password',
       name: 'ForgotPassword',
-      component: ForgotPassword,
+      component: () => import('@/views/auth/ForgotPassword.vue'),
+    },
+    {
+      path: '/reset-password',
+      name: 'ResetPassword',
+      component: () => import('@/views/auth/ResetPassword.vue'),
     },
 
     // Protected system routes (with layout)

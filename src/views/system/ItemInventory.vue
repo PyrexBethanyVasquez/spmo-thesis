@@ -128,11 +128,7 @@
     <div class="search-wrapper">
       <div class="search-bar">
         <ion-icon name="search-outline"></ion-icon>
-        <input
-          type="text"
-          v-model="searchQuery"
-          placeholder="Search items by name, property no, or location..."
-        />
+        <input type="text" v-model="searchQuery" placeholder="Search items" />
       </div>
     </div>
     <br />

@@ -65,6 +65,59 @@ select option[disabled] {
   color: #888;
 }
 
+.search-wrapper {
+  justify-content: start;
+  align-items: center;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #aeaeae;
+  border-radius: 12px;
+  padding: 8px 14px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
+  transition: all 0.3s ease;
+}
+
+.search-bar:hover {
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+}
+
+.search-bar ion-icon {
+  color: #787878;
+  font-size: 1.4rem;
+  margin-right: 10px;
+}
+
+.search-bar input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 1rem;
+  color: #333;
+  background: transparent;
+}
+
+.search-bar input::placeholder {
+  color: #888;
+  font-style: italic;
+}
+
+/* Focused state glow effect */
+.search-bar:focus-within {
+  border-color: #025734;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+}
+
+.search-bar:focus-within ion-icon {
+  color: #175702;
+}
+
 .item-form label {
   display: block;
   margin-bottom: 0.3em;

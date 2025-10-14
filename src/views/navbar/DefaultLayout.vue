@@ -13,6 +13,9 @@
             </button>
             <RouterLink to="/" class="logo">SPMO</RouterLink>
           </div>
+          <div class="nav-right">
+            <span class="datetime">{{ currentDateTime }}</span>
+          </div>
         </nav>
       </div>
     </header>
@@ -104,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/clients/supabase.js'
 
@@ -113,6 +116,43 @@ const user = ref(null)
 const role = ref('user')
 const dropdownOpen = ref(false)
 const sidebarOpen = ref(false)
+const currentDateTime = ref('')
+
+// Clock update
+const updateTime = () => {
+  const now = new Date()
+  const options = {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }
+  currentDateTime.value = now.toLocaleString('en-PH', options)
+}
+
+let clockInterval
+onMounted(() => {
+  updateTime()
+  clockInterval = setInterval(updateTime, 1000)
+
+  // Fetch user
+  supabase.auth.getUser().then(async ({ data: { user: currentUser } }) => {
+    user.value = currentUser
+    if (user.value) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.value.id)
+        .maybeSingle()
+      role.value = profile?.role || 'user'
+    }
+  })
+})
+
+onBeforeUnmount(() => clearInterval(clockInterval))
 
 const toggleMenu = () => (sidebarOpen.value = !sidebarOpen.value)
 const closeMenu = () => (sidebarOpen.value = false)
@@ -122,20 +162,4 @@ const logout = async () => {
   await supabase.auth.signOut()
   router.push('/')
 }
-
-// Fetch user
-onMounted(async () => {
-  const {
-    data: { user: currentUser },
-  } = await supabase.auth.getUser()
-  user.value = currentUser
-  if (user.value) {
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.value.id)
-      .maybeSingle()
-    role.value = profile?.role || 'user'
-  }
-})
 </script>

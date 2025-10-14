@@ -50,23 +50,18 @@
           </label>
 
           <!-- Forgot Password as text -->
-          <span class="forgot-password-text" @click="showModal = true"> Forgot Password? </span>
+          <RouterLink to="/forgot-password" class="forgot-password-text"
+            >Forgot Password?</RouterLink
+          >
         </div>
 
-        <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-          <div class="modal-card">
-            <h3>Contact Developers</h3>
-            <p>
-              Please contact the developers at
-              <a href="mailto:pyrex.pbv@gmail.com" class="modal-link">pyrex.pbv@gmail.com</a>
-              for password assistance.
-            </p>
-            <button class="modal-close-btn" @click="showModal = false">Close</button>
-          </div>
-        </div>
-
-        <!-- Login button -->
-        <button type="submit" class="login-btn">Sign in</button>
+        <button type="submit" class="login-btn" :disabled="loading">
+          <template v-if="loading">
+            <span class="spinner"></span>
+            Signing in...
+          </template>
+          <template v-else> Sign In </template>
+        </button>
       </form>
 
       <!-- Footer -->
@@ -81,14 +76,17 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../../clients/supabase.js'
+import { useToast } from 'vue-toastification'
 
 let email = ref('')
 let password = ref('')
 let showPassword = ref(false)
 let rememberMe = ref(false)
 let authError = ref(null)
+
+const toast = useToast()
 const router = useRouter()
-const showModal = ref(false)
+const loading = ref(false)
 
 onMounted(async () => {
   const {
@@ -107,15 +105,18 @@ onMounted(async () => {
   }
 })
 async function login() {
+  loading.value = true
   authError.value = null
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.value,
     password: password.value,
   })
 
+  loading.value = false
+
   if (error) {
     authError.value = 'Invalid email or password'
-    console.error('Error logging in:', error.message)
+    toast.error('Invalid email or password')
   } else {
     const user = data.user
 

@@ -9,7 +9,7 @@
         <div class="search-wrapper">
           <div class="search-bar">
             <ion-icon name="search-outline" />
-            <input v-model="searchQuery" placeholder="Search items..." />
+            <input v-model="searchQuery" placeholder="Search items" />
           </div>
 
           <!-- Results Dropdown -->

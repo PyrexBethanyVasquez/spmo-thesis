@@ -146,7 +146,6 @@ export default {
 <style scoped>
 .transactions-page {
   padding: 24px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 h1 {
