@@ -38,19 +38,57 @@
       <table class="reports-table">
         <thead>
           <tr>
-            <th>Item Name</th>
-            <th>Property No</th>
-            <th>Location</th>
-            <th>Status</th>
-            <th>Serial No</th>
-            <th>Model/Brand</th>
-            <th>Item Acquired</th>
-            <!-- <th>PO No</th> -->
-            <th>Supplier</th>
-            <th>Total Amount</th>
-            <th>Order Date</th>
+            <th>
+              Item Name
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Property No
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Location
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Department
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Status
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Serial No
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Model/Brand
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Item Acquired
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Purchase Order
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Supplier
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Total Amount
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
+            <th>
+              Order Date
+              <span class="resize-handle" @mousedown="startResize"></span>
+            </th>
           </tr>
         </thead>
+
         <tbody>
           <tr
             v-for="item in itemsWithPO"
@@ -60,11 +98,12 @@
             <td>{{ item.name }}</td>
             <td>{{ item.property_no }}</td>
             <td>{{ item.location }}</td>
+            <td>{{ item.department?.dept_name || '-' }}</td>
             <td>{{ item.action.action_name }}</td>
             <td>{{ item.serial_no }}</td>
             <td>{{ item.model_brand }}</td>
             <td>{{ item.date_acquired }}</td>
-            <!-- <td>{{ item.purchase_order?.po_no || '-' }}</td> -->
+            <td>{{ item.purchase_order?.po_no || '-' }}</td>
             <td>{{ item.purchase_order?.supplier || '-' }}</td>
             <td>
               {{ item.purchase_order?.total_amount ? '₱' + item.purchase_order.total_amount : '-' }}
@@ -79,6 +118,9 @@
 
 <script>
 import { supabase } from '../../../clients/supabase'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
 
 export default {
   name: 'ReportsPage',
@@ -88,21 +130,24 @@ export default {
       totalItems: 0,
       totalPOs: 0,
       totalSuppliers: 0,
+      departments: [],
     }
   },
   async mounted() {
-    await this.fetchItemsWithPO()
+    await this.fetchItems()
+    await this.fetchDepartments()
     this.calculateSummary()
   },
   methods: {
-    async fetchItemsWithPO() {
+    async fetchItems() {
       const { data, error } = await supabase
         .from('items')
         .select(
           `
             *,
             purchase_order:purchase_order!inner(*),
-            action:status(action_id, action_name)
+            action:status(action_id, action_name),
+            department:dept_id(dept_name)
           `,
         )
         .order('item_no', { ascending: true })
@@ -117,6 +162,17 @@ export default {
       this.totalSuppliers = [...new Set(suppliers)].length
     },
 
+    async fetchDepartments() {
+      const { data, error } = await supabase.from('department').select('*').order('dept_name')
+
+      if (error) {
+        toast.error('Error fetching departments: ' + error.message)
+        return
+      }
+
+      this.departments = data
+    },
+
     exportCSV() {
       if (!this.itemsWithPO.length) return
 
@@ -124,11 +180,12 @@ export default {
         'Item Name',
         'Property No',
         'Location',
+        'Department',
         'Status',
         'Serial No',
         'Model/Brand',
         'Item Acquired',
-        // 'PO No',
+        'PO No',
         'Supplier',
         'Total Amount',
         'Order Date',
@@ -138,11 +195,12 @@ export default {
         item.name,
         item.property_no,
         item.location,
+        item.dept_name,
         item.action?.action_name || 'Unknown',
         item.serial_no,
         item.model_brand,
         item.date_acquired,
-        // item.purchase_order?.po_no || '',
+        item.purchase_order?.po_no || '',
         item.purchase_order?.supplier || '',
         item.purchase_order?.total_amount || '',
         item.purchase_order?.order_date || '',
@@ -167,53 +225,64 @@ export default {
   padding: 2rem;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f7f8fa;
-  color: #000000;
+  color: #000;
   min-height: 100vh;
 }
 
+/* Header Section */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.page-header h2 {
+  font-size: 1.8rem;
+  color: #1a1a1a;
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
+/* Buttons */
 .back-btn,
 .export-btn {
   border: none;
-  padding: 8px 14px; /* same for both */
-  border-radius: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px; /* same text size */
-  line-height: 1; /* consistent text spacing */
-  min-height: 36px; /* force same overall button height */
+  gap: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
 .back-btn {
   background-color: #1976d2;
-  color: white;
+  color: #fff;
 }
 
 .back-btn:hover {
   background-color: #1565c0;
+  transform: translateY(-1px);
 }
 
 .export-btn {
   background-color: #43a047;
-  color: white;
+  color: #fff;
 }
 
 .export-btn:hover {
   background-color: #388e3c;
+  transform: translateY(-1px);
 }
 
 p {
@@ -221,93 +290,135 @@ p {
   color: #555;
 }
 
+/* Summary Section */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  padding: 1.25rem;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card h3 {
+  margin-bottom: 0.4rem;
+  font-size: 15px;
+  color: #333;
+}
+
+.summary-card p {
+  font-size: 22px;
+  font-weight: bold;
+  color: #1976d2;
+}
+
+/* Table Section */
 .table-wrapper {
   overflow-x: auto;
-  background-color: white;
-  border-radius: 8px;
-  padding: 1rem;
+  background-color: #fff;
+  border-radius: 10px;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
 }
 
 .reports-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 950px; /* helps maintain structure on small screens */
 }
 
 .reports-table th,
 .reports-table td {
   border: 1px solid #e0e0e0;
-  padding: 10px;
+  padding: 10px 12px;
   text-align: left;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .reports-table th {
   background-color: #a7b982;
   font-weight: 600;
+  color: #1a1a1a;
 }
 
 .reports-table tr:nth-child(even) {
   background-color: #fafafa;
 }
 
-.summary-cards {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
+.reports-table tr:hover {
+  background-color: #f1f7e7;
 }
 
-.summary-card {
-  flex: 1;
-  padding: 1rem;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
-  text-align: center;
+/* Responsive Adjustments */
+@media (max-width: 992px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .page-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
-.summary-card h3 {
-  margin-bottom: 0.5rem;
-  font-size: 16px;
-  color: #333;
-}
-
-.summary-card p {
-  font-size: 20px;
-  font-weight: bold;
-  color: #1976d2;
-}
-/* Media Queries */
 @media (max-width: 768px) {
   .reports-page {
-    padding: 1rem;
+    padding: 1.25rem;
   }
 
   .reports-table th,
   .reports-table td {
-    font-size: 12px;
-    padding: 6px;
+    font-size: 13px;
+    padding: 8px;
   }
 
   .back-btn,
   .export-btn {
-    font-size: 12px;
-    padding: 6px 10px;
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  .summary-card p {
+    font-size: 18px;
   }
 }
 
 @media (max-width: 480px) {
   .page-header {
-    flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
   .summary-cards {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .summary-card {
-    width: 100%;
+    padding: 1rem;
+  }
+
+  .reports-table {
+    min-width: 650px;
   }
 }
 </style>

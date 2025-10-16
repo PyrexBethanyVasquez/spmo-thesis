@@ -231,22 +231,6 @@ h1 {
   color: rgb(255, 255, 255);
 }
 
-.status-label.issued {
-  background-color: #f39c12;
-}
-
-.status-label.returned {
-  background-color: #27ae60;
-}
-
-.status-label.disposed {
-  background-color: #c0392b;
-}
-
-.status-label.transferred {
-  background-color: #029cd9;
-}
-
 .no-data {
   text-align: center;
   padding: 16px;

@@ -1,3 +1,42 @@
+<script setup>
+import { onMounted } from 'vue'
+import { useItems } from '../../composables/useItem'
+
+const {
+  filteredItems,
+  actions,
+  showConfirm,
+  editingItem,
+  stickerItem,
+  currentPage,
+  totalPages,
+  itemHeaders,
+  poHeaders,
+  linkedPurchaseOrders,
+  searchQuery,
+  departments,
+  selectedDepartment,
+  selectedStatus,
+
+  fetchItems,
+  askDelete,
+  confirmDelete,
+  cancelDelete,
+  editItem,
+  cancelEdit,
+  openStickerModal,
+  closeStickerModal,
+  printSticker,
+  goToPage,
+  startResize,
+  updateItem,
+} = useItems()
+
+onMounted(() => {
+  fetchItems()
+})
+</script>
+
 <template>
   <div class="items-page">
     <div class="page-header">
@@ -7,6 +46,28 @@
       </router-link>
     </div>
     <p>View Items and Purchase Orders</p>
+
+    <div class="filters">
+      <input
+        v-model.number="searchQuery"
+        placeholder="Search by name, property no, or model..."
+        @input="fetchItems(1)"
+      />
+
+      <select v-model.number="selectedDepartment">
+        <option value="">All Departments</option>
+        <option v-for="dept in departments" :key="dept.dept_id" :value="dept.dept_name">
+          {{ dept.dept_name }}
+        </option>
+      </select>
+
+      <select v-model="selectedStatus">
+        <option value="">All Status</option>
+        <option v-for="action in actions" :key="action.action_id" :value="action.action_id">
+          {{ action.action_name }}
+        </option>
+      </select>
+    </div>
 
     <hr />
     <h3>Items</h3>
@@ -23,12 +84,17 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in items" :key="item.item_no">
+          <tr v-for="item in filteredItems" :key="item.item_no">
             <td>{{ item.name }}</td>
             <td>{{ item.property_no }}</td>
             <td>{{ item.location }}</td>
             <td>{{ item.dept_name }}</td>
-            <td>{{ item.status }}</td>
+            <td>
+              <span :class="['status-label', item.status.toLowerCase().replace(/\s+/g, '-')]">
+                {{ item.status }}
+              </span>
+            </td>
+
             <td>{{ item.serial_no }}</td>
             <td>{{ item.model_brand }}</td>
             <td>{{ item.date_acquired }}</td>
@@ -194,332 +260,3 @@
     </div>
   </div>
 </template>
-
-<script>
-import { supabase } from '../../clients/supabase'
-import { useToast } from 'vue-toastification'
-import QRCode from 'qrcode'
-
-const toast = useToast()
-
-export default {
-  name: 'ItemInventory',
-  data() {
-    return {
-      items: [],
-      actions: [],
-      purchaseOrders: [],
-      condition_names: [],
-      showConfirm: false,
-      itemToDelete: null,
-      editingItem: null,
-      stickerItem: null,
-      currentPage: 1,
-      pageSize: 5, // items per page
-      totalItems: 0,
-      totalPages: 0,
-      itemHeaders: [
-        'Item Name',
-        'Property No',
-        'Location',
-        'Department',
-        'Status',
-        'Serial No',
-        'Model/Brand',
-        'Date Acquired',
-        'Item Condition',
-        'Purchase Order Linked',
-        'Item Sticker',
-        'Actions',
-      ],
-      poHeaders: ['Purchase Order Number', 'Supplier', 'Total Amount', 'Order Date'],
-    }
-  },
-  computed: {
-    // show linked PO items only
-    linkedPurchaseOrders() {
-      const linkedPoNos = new Set(this.items.map((item) => item.po_no).filter(Boolean))
-      return this.purchaseOrders.filter((po) => linkedPoNos.has(po.po_no))
-    },
-  },
-  async mounted() {
-    await this.fetchItems()
-    await this.fetchPurchaseOrders()
-    await this.fetchConditions()
-    await this.fetchActions()
-    await this.fetchDefaultStatus()
-    await this.fetchDepartments()
-  },
-  methods: {
-    async fetchItems(page = 1) {
-      const from = (page - 1) * this.pageSize
-      const to = from + this.pageSize - 1
-
-      const { data, error, count } = await supabase
-        .from('items')
-        .select(
-          `
-      *,
-      condition:condition_id (
-        condition_name
-      ),  action:status(action_id,action_name),department:dept_id(dept_name)
-    `,
-          { count: 'exact' },
-        )
-        .order('updated_at', { ascending: false })
-        .range(from, to)
-
-      if (error) {
-        toast.error('Error fetching items:', error.message)
-        return
-      }
-
-      this.items = await Promise.all(
-        data.map(async (item) => {
-          try {
-            const idForQr = item.item_no ?? item.id ?? ''
-            const qrCode = await QRCode.toDataURL(String(idForQr), {
-              width: 150,
-              margin: 1,
-            })
-            return {
-              ...item,
-              qrCode,
-              condition_name: item.condition?.condition_name || 'N/A',
-              status: item.action?.action_name || 'Issued',
-              dept_id: item.department?.dept_id || item.dept_id || '',
-              dept_name:
-                item.department?.dept_name ||
-                this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
-                'N/A',
-            }
-          } catch (e) {
-            console.warn('QR generation failed for item', item, e)
-            return {
-              ...item,
-              qrCode: '',
-              condition_name: item.condition?.condition_name || 'N/A',
-              status: item.action?.action_name || 'Issued',
-              dept_id: item.department?.dept_id || item.dept_id || '',
-              dept_name:
-                item.department?.dept_name ||
-                this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
-                'N/A',
-            }
-          }
-        }),
-      )
-      this.totalItems = count
-      this.totalPages = Math.ceil(count / this.pageSize)
-      this.currentPage = page
-    },
-
-    async fetchDepartments() {
-      const { data, error } = await supabase
-        .from('department')
-        .select('*')
-        .order('dept_name', { ascending: true })
-
-      if (error) {
-        toast.error('Error fetching departments:', error.message)
-        this.departments = []
-      } else {
-        this.departments = data || []
-      }
-    },
-
-    async fetchDefaultStatus() {
-      const { data, error } = await supabase
-        .from('action')
-        .select('action_id')
-        .eq('action_name', 'Issued')
-        .single()
-
-      if (error) {
-        toast.error('Error fetching default status:', error.message)
-      } else {
-        this.defaultStatusId = data.action_id
-        //this.newItem.status = this.defaultStatusId // set default for new items
-      }
-    },
-
-    async fetchActions() {
-      const { data, error } = await supabase.from('action').select('*')
-      if (error) {
-        toast.error('Error fetching actions:', error.message)
-        this.actions = []
-      } else {
-        this.actions = data || []
-
-        // Optionally set default status to "Issued"
-        // const goodAction = this.actions.find((a) => a.action_name === 'Issued')
-        // if (goodAction) this.newItem.status = goodAction.action_id
-      }
-    },
-
-    async fetchPurchaseOrders() {
-      const { data, error } = await supabase
-        .from('purchase_order')
-        .select('*')
-        .order('po_no', { ascending: true })
-
-      if (error) {
-        toast.error('Error fetching purchase orders:', error.message)
-        this.purchaseOrders = []
-      } else {
-        this.purchaseOrders = data || []
-      }
-    },
-
-    async fetchConditions() {
-      const { data, error } = await supabase
-        .from('condition')
-        .select('condition_name')
-        .order('condition_name', { ascending: true })
-
-      if (error) {
-        toast.error('Error fetching conditions:', error.message)
-        this.condition_names = []
-      } else {
-        this.condition_names = data ? data.map((c) => c.condition_name) : []
-      }
-    },
-
-    async updateItem() {
-      try {
-        // Prepare the updated item data
-        const itemData = {
-          name: this.editingItem.name,
-          property_no: this.editingItem.property_no,
-          location: this.editingItem.location,
-          status: this.editingItem.status,
-          serial_no: this.editingItem.serial_no,
-          model_brand: this.editingItem.model_brand,
-          date_acquired: this.editingItem.date_acquired,
-          po_no: this.editingItem.po_no,
-          condition_id: this.editingItem.condition_id,
-          dept_id: this.editingItem.dept_id,
-        }
-
-        // 1️⃣ Update the item
-        const { error: updateError } = await supabase
-          .from('items')
-          .update(itemData)
-          .eq('item_no', this.editingItem.item_no)
-
-        if (updateError) {
-          console.error('Error updating item:', updateError.message)
-          toast.error('Error updating item: ' + updateError.message)
-          return
-        }
-
-        // 2️⃣ Get the logged-in user
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        const userId = user?.id || null // fallback to null if not found
-
-        // 3️⃣ Record the transaction
-        const transactionPayload = {
-          item_no: this.editingItem.item_no, // change to item_id if your table expects it
-          action_id: this.editingItem.status, // should match your action_id column
-          dept_id: this.editingItem.dept_id,
-          user_id: userId,
-          date: new Date().toISOString(),
-        }
-
-        console.log('Transaction payload:', transactionPayload)
-
-        const { error: txnError } = await supabase.from('transaction').insert(transactionPayload)
-
-        if (txnError) {
-          console.error('Transaction insert failed:', txnError.message)
-          toast.error('Item updated but failed to record transaction')
-        } else {
-          toast.success('Item updated and transaction recorded!')
-        }
-
-        // 4️⃣ Refresh item list
-        await this.fetchItems()
-        this.editingItem = null
-      } catch (err) {
-        console.error('Unexpected error:', err)
-        toast.error('Something went wrong while updating the item')
-      }
-    },
-    editItem(item) {
-      this.editingItem = { ...item, status: item.action?.action_id || '' }
-    },
-
-    goToPage(page) {
-      if (page < 1 || page > this.totalPages) return
-      this.fetchItems(page)
-    },
-
-    startResize(e) {
-      const th = e.target.parentElement
-      const startX = e.pageX
-      const startWidth = th.offsetWidth
-
-      const minWidth = 80
-      const maxWidth = 400
-
-      const doDrag = (ev) => {
-        let newWidth = startWidth + (ev.pageX - startX)
-        if (newWidth < minWidth) newWidth = minWidth
-        if (newWidth > maxWidth) newWidth = maxWidth
-        th.style.width = newWidth + 'px'
-      }
-
-      const stopDrag = () => {
-        document.removeEventListener('mousemove', doDrag)
-        document.removeEventListener('mouseup', stopDrag)
-      }
-
-      document.addEventListener('mousemove', doDrag)
-      document.addEventListener('mouseup', stopDrag)
-    },
-
-    askDelete(itemId) {
-      this.itemToDelete = itemId
-      this.showConfirm = true
-    },
-
-    async confirmDelete() {
-      if (!this.itemToDelete) return
-
-      const { error } = await supabase.from('items').delete().eq('item_no', this.itemToDelete)
-
-      if (error) {
-        alert('Error deleting item: ' + error.message)
-      } else {
-        await this.fetchItems()
-      }
-
-      this.showConfirm = false
-      this.itemToDelete = null
-    },
-
-    cancelDelete() {
-      this.showConfirm = false
-      this.itemToDelete = null
-    },
-
-    cancelEdit() {
-      this.editingItem = null
-    },
-
-    openStickerModal(item) {
-      this.stickerItem = item
-    },
-
-    closeStickerModal() {
-      this.stickerItem = null
-    },
-
-    printSticker() {
-      window.print()
-    },
-  },
-}
-</script>
