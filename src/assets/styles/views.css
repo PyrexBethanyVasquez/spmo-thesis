@@ -696,10 +696,6 @@ body {
   white-space: nowrap;
 }
 
-.datetime:hover {
-  color: #ffcc00;
-}
-
 /* 📱 Responsive adjustments */
 @media (max-width: 768px) {
   .datetime {

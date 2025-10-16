@@ -98,6 +98,97 @@
   background: #059669;
 }
 
+.status-label {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 200;
+  text-transform: capitalize;
+  color: #fff;
+  text-align: center;
+  min-width: 80px;
+  transition:
+    transform 0.2s ease,
+    background-color 0.3s ease;
+}
+
+/* Add hover animation */
+.status-label:hover {
+  transform: scale(1.05);
+}
+
+/* Status-specific colors */
+.status-label.issued {
+  background-color: #f39c12;
+}
+
+.status-label.returned {
+  background-color: #27ae60;
+}
+
+.status-label.disposed {
+  background-color: #c0392b;
+}
+
+.status-label.transferred {
+  background-color: #029cd9;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  background: #f9fafb;
+  padding: 0.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.filters input,
+.filters select {
+  padding: 0.6rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #fff;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.filters input {
+  flex: 1;
+  min-width: 250px;
+}
+
+.filters input:focus,
+.filters select:focus {
+  border-color: #2563eb; /* blue-600 */
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  outline: none;
+}
+
+.filters select {
+  cursor: pointer;
+}
+
+.filters option {
+  background-color: #fff;
+  color: #111827;
+}
+
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters input,
+  .filters select {
+    width: 100%;
+  }
+}
+
 /* Sticker modal */
 .sticker-modal {
   max-width: 420px;
