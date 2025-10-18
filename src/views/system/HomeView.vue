@@ -75,14 +75,12 @@
               <ion-icon name="construct-outline" />
               <h3>Unserviceable / For Disposal</h3>
               <p>{{ damagedItems }}</p>
-              <span>"Under Development"</span>
             </div>
 
             <div class="dashboard-card">
               <ion-icon name="swap-horizontal-outline" />
               <h3>Transactions Today</h3>
               <p>{{ todayTransactions }}</p>
-              <span>"Under Development"</span>
             </div>
           </div>
 
@@ -102,7 +100,6 @@
               <div class="chart-box">
                 <canvas id="lineChart"></canvas>
                 <p>Transactions Over Time</p>
-                <span>"Under Development"</span>
               </div>
             </div>
           </div>
@@ -155,6 +152,7 @@
                 <tr>
                   <th>Item</th>
                   <th>Added by</th>
+                  <th>Received by</th>
                   <th>Department</th>
                   <th>Status</th>
                   <th>Date</th>
@@ -163,6 +161,7 @@
               <tbody>
                 <tr v-for="t in recentTransactions" :key="t.id">
                   <td>{{ t.item_name }}</td>
+                  <td>{{ t.user }}</td>
                   <td>{{ t.recipient }}</td>
                   <td>{{ t.department }}</td>
                   <td>{{ t.status }}</td>
@@ -325,6 +324,7 @@ async function fetchItemsWithPO() {
       *,
       purchase_order:purchase_order!inner(*),
       action:status(action_id, action_name)
+
     `,
     )
     .order('item_no', { ascending: true })
@@ -362,6 +362,7 @@ async function fetchRecentTransactions() {
   const userIds = transactions.map((t) => t.user_id).filter(Boolean)
   const deptIds = transactions.map((t) => t.dept_id).filter(Boolean)
   const actIds = transactions.map((t) => t.action_id).filter(Boolean)
+  const recipID = transactions.map((t) => t.indiv_txn_id).filter(Boolean)
 
   // 3️⃣ Fetch related items
   let items = []
@@ -380,6 +381,16 @@ async function fetchRecentTransactions() {
     const { data, error } = await supabase.from('users').select('id, full_name').in('id', userIds)
     if (error) console.error('Error fetching users:', error.message)
     users = data || []
+  }
+
+  let recipient = []
+  if (recipID.length > 0) {
+    const { data, error } = await supabase
+      .from('individual_transaction')
+      .select('indiv_txn_id, recipient_name')
+      .in('indiv_txn_id', recipID)
+    if (error) console.error('Error fetching recipient:', error.message)
+    recipient = data || []
   }
 
   // 5️⃣ Fetch related departments
@@ -407,6 +418,7 @@ async function fetchRecentTransactions() {
   const userMap = Object.fromEntries(users.map((u) => [u.id, u.full_name]))
   const deptMap = Object.fromEntries(departments.map((d) => [d.dept_id, d.dept_name]))
   const actionMap = Object.fromEntries(actions.map((a) => [a.action_id, a.action_name]))
+  const recipientMap = Object.fromEntries(recipient.map((r) => [r.indiv_txn_id, r.recipient_name]))
 
   // 7️⃣ Flatten transactions for Vue
   recentTransactions.value = transactions.map((t) => {
@@ -414,13 +426,137 @@ async function fetchRecentTransactions() {
     return {
       id: t.txn_id,
       item_name: item?.name || 'Unknown Item',
-      status: actionMap[t.action_id] || 'Pending', // get status directly from items table
-      recipient: userMap[t.user_id] || 'Unknown User',
+      status: actionMap[t.action_id] || 'Pending',
+      user: userMap[t.user_id] || 'Unknown User',
+      recipient: recipientMap[t.indiv_txn_id] || 'N/A',
       department: deptMap[t.dept_id] || 'N/A',
       date: t.date,
     }
   })
 }
+
+let lineChartInstance = null
+
+// Function to render the chart
+async function renderTransactionChart(transactions) {
+  const ctx = document.getElementById('lineChart')
+  if (!ctx) return
+
+  // Check if transactions exist
+  if (!transactions || transactions.length === 0) {
+    // Destroy previous chart if exists
+    if (lineChartInstance) lineChartInstance.destroy()
+
+    // Render a chart with a single "No data" label
+    lineChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['No Data'],
+        datasets: [
+          {
+            label: 'Transactions',
+            data: [0],
+            borderColor: '#673ab7',
+            backgroundColor: '#673ab7',
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true },
+          title: { display: true, text: 'Transactions Over Time' },
+        },
+        scales: {
+          x: { title: { display: true, text: 'Date' } },
+          y: { title: { display: true, text: 'Transactions' }, beginAtZero: true, precision: 0 },
+        },
+      },
+    })
+    return
+  }
+
+  // Group transactions by date
+  const dateCounts = {}
+  transactions.forEach((txn) => {
+    const date = new Date(txn.date).toLocaleDateString() // e.g., "10/18/2025"
+    dateCounts[date] = (dateCounts[date] || 0) + 1
+  })
+
+  const labels = Object.keys(dateCounts).sort((a, b) => new Date(a) - new Date(b))
+  const dataPoints = labels.map((label) => dateCounts[label])
+
+  // Destroy existing chart if any
+  if (lineChartInstance) lineChartInstance.destroy()
+
+  // Create new chart
+  lineChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Transactions',
+          data: dataPoints,
+          borderColor: '#673ab7',
+          backgroundColor: '#673ab7',
+          tension: 0.2,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true },
+        title: { display: true, text: 'Transactions Over Time' },
+      },
+      scales: {
+        x: { title: { display: true, text: 'Date' } },
+        y: { title: { display: true, text: 'Transactions' }, beginAtZero: true, precision: 0 },
+      },
+    },
+  })
+}
+
+async function fetchTodayTransactions() {
+  const today = new Date()
+  const yyyy = today.getFullYear()
+  const mm = String(today.getMonth() + 1).padStart(2, '0')
+  const dd = String(today.getDate()).padStart(2, '0')
+  const todayStr = `${yyyy}-${mm}-${dd}` // e.g., "2025-10-18"
+
+  const { count, error } = await supabase
+    .from('transaction')
+    .select('*', { count: 'exact', head: true })
+    .eq('date', todayStr) // assuming your `date` column is DATE or string "YYYY-MM-DD"
+
+  if (error) {
+    console.error('Error fetching today transactions:', error.message)
+    todayTransactions.value = 0
+    return
+  }
+
+  todayTransactions.value = count || 0
+}
+
+async function fetchDamagedItems() {
+  // Replace 'For Disposal' with the exact condition_name in your database
+  const { count, error } = await supabase
+    .from('items')
+    .select('*', { count: 'exact', head: true })
+    .eq('condition_id', 2)
+
+  if (error) {
+    console.error('Error fetching damaged items:', error.message)
+    damagedItems.value = 0
+    return
+  }
+
+  damagedItems.value = count || 0
+}
+
 function calculateSummary() {
   totalItems.value = itemsWithPO.value.length
   totalPOs.value = itemsWithPO.value.filter((i) => i.purchase_order).length
@@ -458,17 +594,6 @@ function goToItem(item) {
 //     },
 //   })
 
-//   new Chart(document.getElementById('lineChart'), {
-//     type: 'line',
-//     data: {
-//       labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-//       datasets: [
-//         { label: 'Transactions', data: [5, 8, 6, 10, 7], borderColor: '#673ab7', fill: false },
-//       ],
-//     },
-//   })
-// }
-
 onMounted(async () => {
   const {
     data: { user },
@@ -487,8 +612,11 @@ onMounted(async () => {
     await fetchTotalUsers()
     await fetchItemsWithPO()
     await fetchRecentTransactions()
+    await fetchTodayTransactions()
+    await fetchDamagedItems()
     loading.value = false
     await fetchConditions()
+    await renderTransactionChart(recentTransactions.value)
     //initCharts()
   }
 })
