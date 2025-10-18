@@ -65,59 +65,6 @@ select option[disabled] {
   color: #888;
 }
 
-.search-wrapper {
-  justify-content: start;
-  align-items: center;
-}
-
-.search-bar {
-  display: flex;
-  align-items: center;
-  background: #ffffff;
-  border: 1px solid #aeaeae;
-  border-radius: 12px;
-  padding: 8px 14px;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
-  transition: all 0.3s ease;
-}
-
-.search-bar:hover {
-  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
-  transform: translateY(-1px);
-}
-
-.search-bar ion-icon {
-  color: #787878;
-  font-size: 1.4rem;
-  margin-right: 10px;
-}
-
-.search-bar input {
-  border: none;
-  outline: none;
-  width: 100%;
-  font-size: 1rem;
-  color: #333;
-  background: transparent;
-}
-
-.search-bar input::placeholder {
-  color: #888;
-  font-style: italic;
-}
-
-/* Focused state glow effect */
-.search-bar:focus-within {
-  border-color: #025734;
-  box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
-}
-
-.search-bar:focus-within ion-icon {
-  color: #175702;
-}
-
 .item-form label {
   display: block;
   margin-bottom: 0.3em;
@@ -453,6 +400,42 @@ select option[disabled] {
   .modal-grid {
     grid-template-columns: 1fr; /* 1 column on small screens */
   }
+}
+
+.filters-search {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 12px;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filters-search ion-icon {
+  font-size: 1.2rem;
+  color: #666;
+  margin-right: 8px;
+}
+
+.filters-search input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+  color: #333;
+}
+
+.filters-search:focus-within {
+  border-color: #ffcc00;
+  box-shadow: 0 0 0 3px rgba(179, 147, 5, 0.2);
+}
+
+.filters-search:focus-within ion-icon {
+  color: #ffcc00;
 }
 
 /* Sticker modal */
@@ -1039,4 +1022,51 @@ select option[disabled] {
 }
 .item-name {
   display: block;
+}
+
+.skeleton-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.skeleton-row {
+  height: 20px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  background: #e0e0e0;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+/* Row width variations for stair effect */
+.skeleton-row:nth-child(1) {
+  width: 100%; /* Longest */
+}
+.skeleton-row:nth-child(2) {
+  width: 70%; /* Medium */
+}
+.skeleton-row:nth-child(3) {
+  width: 40%; /* Shortest */
+}
+
+/* Pulse shimmer */
+@keyframes pulse {
+  0% {
+    background-color: #e0e0e0;
+  }
+  50% {
+    background-color: #f5f5f5;
+  }
+  100% {
+    background-color: #e0e0e0;
+  }
+}
+
+/* Optional fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }

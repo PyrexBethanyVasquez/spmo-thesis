@@ -163,8 +163,8 @@
 
 .filters input:focus,
 .filters select:focus {
-  border-color: #2563eb; /* blue-600 */
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  border-color: #ffcc00; /* blue-600 */
+  box-shadow: 0 0 0 3px rgba(179, 147, 5, 0.2);
   outline: none;
 }
 
@@ -175,6 +175,17 @@
 .filters option {
   background-color: #fff;
   color: #111827;
+}
+
+.filters ion-icon {
+  font-size: 1.2rem;
+  margin-right: 0.1rem;
+  margin-left: 0.5rem;
+  color: #373737;
+}
+
+.filters:focus-within ion-icon {
+  color: #ffcc00;
 }
 
 @media (max-width: 768px) {

@@ -58,9 +58,11 @@
   font-size: 0.9rem;
 }
 .search-bar:focus-within {
-  box-shadow: 0 0 5px rgba(74, 144, 226, 0.4); /* highlights when input is focused */
+  box-shadow: 0 0 0 3px rgba(179, 147, 5, 0.2);
 }
-
+.search-bar:focus-within ion-icon {
+  color: #ffcc00;
+}
 .search-bar input::placeholder {
   color: #6b6b6b;
 }

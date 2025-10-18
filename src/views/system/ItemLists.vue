@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useItems } from '../../composables/useItem'
 
+const loading = ref(true)
 const {
   filteredItems,
   actions,
@@ -32,8 +33,13 @@ const {
   updateItem,
 } = useItems()
 
-onMounted(() => {
-  fetchItems()
+onMounted(async () => {
+  try {
+    loading.value = true
+    await fetchItems()
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 
@@ -48,6 +54,7 @@ onMounted(() => {
     <p>View Items and Purchase Orders</p>
 
     <div class="filters">
+      <ion-icon name="search-outline" />
       <input
         v-model.number="searchQuery"
         placeholder="Search by name, property no, or model..."
@@ -73,49 +80,58 @@ onMounted(() => {
     <h3>Items</h3>
 
     <!-- Items Table -->
-    <div class="table-wrapper">
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th v-for="header in itemHeaders" :key="header" class="resizable">
-              {{ header }}
-              <div class="resizer" @mousedown="startResize($event)"></div>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in filteredItems" :key="item.item_no">
-            <td>{{ item.name }}</td>
-            <td>{{ item.property_no }}</td>
-            <td>{{ item.location }}</td>
-            <td>{{ item.dept_name }}</td>
-            <td>
-              <span :class="['status-label', item.status.toLowerCase().replace(/\s+/g, '-')]">
-                {{ item.status }}
-              </span>
-            </td>
+    <transition name="fade" mode="out-in">
+      <!-- 🔹 Skeleton loader when loading -->
+      <div v-if="loading" key="loading" class="table-skeleton">
+        <div class="skeleton-row" v-for="n in 6" :key="'row-' + n">
+          <div class="skeleton-cell" v-for="c in 10" :key="'cell-' + c"></div>
+        </div>
+      </div>
 
-            <td>{{ item.serial_no }}</td>
-            <td>{{ item.model_brand }}</td>
-            <td>{{ item.date_acquired }}</td>
-            <td>{{ item.condition_name || 'N/A' }}</td>
-            <td>
-              <span v-if="item.po_no" class="po-badge">
-                Purchase Order Number: {{ item.po_no }}
-              </span>
-              <span v-else class="no-po">N/A</span>
-            </td>
-            <td>
-              <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
-            </td>
-            <td>
-              <button @click="editItem(item)">Edit</button>
-              <button @click="askDelete(item.item_no)">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <!-- 🔹 Actual data table when done -->
+      <div v-else key="data" class="table-wrapper">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th v-for="header in itemHeaders" :key="header" class="resizable">
+                {{ header }}
+                <div class="resizer" @mousedown="startResize($event)"></div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in filteredItems" :key="item.item_no">
+              <td>{{ item.name }}</td>
+              <td>{{ item.property_no }}</td>
+              <td>{{ item.location }}</td>
+              <td>{{ item.dept_name }}</td>
+              <td>
+                <span :class="['status-label', item.status.toLowerCase().replace(/\s+/g, '-')]">
+                  {{ item.status }}
+                </span>
+              </td>
+              <td>{{ item.serial_no }}</td>
+              <td>{{ item.model_brand }}</td>
+              <td>{{ item.date_acquired }}</td>
+              <td>{{ item.condition_name || 'N/A' }}</td>
+              <td>
+                <span v-if="item.po_no" class="po-badge">
+                  Purchase Order Number: {{ item.po_no }}
+                </span>
+                <span v-else class="no-po">N/A</span>
+              </td>
+              <td>
+                <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
+              </td>
+              <td>
+                <button @click="editItem(item)">Edit</button>
+                <button @click="askDelete(item.item_no)">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </transition>
 
     <div class="pagination">
       <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">Previous</button>
@@ -130,27 +146,35 @@ onMounted(() => {
 
     <h3>Purchase Orders (with items only)</h3>
 
-    <!-- Purchase Orders Table -->
-    <div class="table-wrapper">
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th v-for="header in poHeaders" :key="header" class="resizable">
-              {{ header }}
-              <div class="resizer" @mousedown="startResize($event)"></div>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="po in linkedPurchaseOrders" :key="po.po_no">
-            <td>{{ po.po_no }}</td>
-            <td>{{ po.supplier }}</td>
-            <td>₱{{ po.total_amount }}</td>
-            <td>{{ po.order_date }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <transition name="fade" mode="out-in">
+      <!-- 🔹 Skeleton loader when loading -->
+      <div v-if="loading" key="loading" class="table-skeleton">
+        <div class="skeleton-row" v-for="n in 5" :key="'row-' + n">
+          <div class="skeleton-cell" v-for="c in 10" :key="'cell-' + c"></div>
+        </div>
+      </div>
+      <!-- Purchase Orders Table -->
+      <div v-else key="data" class="table-wrapper">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th v-for="header in poHeaders" :key="header" class="resizable">
+                {{ header }}
+                <div class="resizer" @mousedown="startResize($event)"></div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="po in linkedPurchaseOrders" :key="po.po_no">
+              <td>{{ po.po_no }}</td>
+              <td>{{ po.supplier }}</td>
+              <td>₱{{ po.total_amount }}</td>
+              <td>{{ po.order_date }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </transition>
 
     <!-- Delete Confirmation -->
     <div v-if="showConfirm" class="modal-overlay">

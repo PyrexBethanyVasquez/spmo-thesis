@@ -125,64 +125,72 @@
     <br />
 
     <!-- Search Section -->
-    <div class="filters">
+    <div class="filters-search">
+      <ion-icon name="search-outline" />
       <input
         v-model.number="searchQuery"
         placeholder="Search by item number, name, property no, or model..."
       />
     </div>
-    <!-- Items Table -->
-    <div class="table-wrapper">
-      <table class="items-table-inventory">
-        <thead>
-          <tr>
-            <th>QR Code</th>
-            <th>Name</th>
-            <th>Property No</th>
-            <th>Location</th>
-            <th>Department</th>
-            <th>Status</th>
-            <th>Serial No</th>
-            <th>Model/Brand</th>
-            <th>Date Acquired</th>
-            <th>Item Sticker</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in filteredItems" :key="item.id || item.item_no">
-            <td>
-              <div class="qr-row">
-                <img v-if="item.qrCode" :src="item.qrCode" alt="QR Code" class="qr-img" />
-                <span class="item-no">{{ item.item_no }}</span>
-              </div>
-            </td>
 
-            <td class="item-cell">
-              <span v-if="item.item_no === recentlyAddedItemId" class="badge-overlay">
-                Recently Added
-              </span>
-              <span class="item-name">{{ item.name }}</span>
-            </td>
+    <transition name="fade" mode="out-in">
+      <div v-if="loading" key="loading" class="table-skeleton">
+        <div class="skeleton-row" v-for="n in 3" :key="n"></div>
+      </div>
+      <!-- Items Table -->
+      <div v-else key="data" class="table-wrapper">
+        <table class="items-table-inventory">
+          <thead>
+            <tr>
+              <th>QR Code</th>
+              <th>Name</th>
+              <th>Property No</th>
+              <th>Location</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Serial No</th>
+              <th>Model/Brand</th>
+              <th>Date Acquired</th>
+              <th>Item Sticker</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in filteredItems" :key="item.id || item.item_no">
+              <td>
+                <div class="qr-row">
+                  <img v-if="item.qrCode" :src="item.qrCode" alt="QR Code" class="qr-img" />
+                  <span class="item-no">{{ item.item_no }}</span>
+                </div>
+              </td>
 
-            <td>{{ item.property_no }}</td>
-            <td>{{ item.location }}</td>
-            <td>{{ item.dept_name }}</td>
-            <td>{{ item.status_name }}</td>
-            <td>{{ item.serial_no }}</td>
-            <td>{{ item.model_brand }}</td>
-            <td>{{ item.date_acquired }}</td>
-            <td>
-              <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
-            </td>
-            <td>
-              <button @click="editItem(item)">Edit</button>
-              <button @click="askDelete(item.item_no)">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              <td class="item-cell">
+                <span v-if="item.item_no === recentlyAddedItemId" class="badge-overlay">
+                  Recently Added
+                </span>
+                <span class="item-name">{{ item.name }}</span>
+              </td>
+
+              <td>{{ item.property_no }}</td>
+              <td>{{ item.location }}</td>
+              <td>{{ item.dept_name }}</td>
+              <td>{{ item.status_name }}</td>
+              <td>{{ item.serial_no }}</td>
+              <td>{{ item.model_brand }}</td>
+              <td>{{ item.date_acquired }}</td>
+              <td>
+                <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
+              </td>
+              <td>
+                <button @click="editItem(item)">Edit</button>
+                <button @click="askDelete(item.item_no)">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </transition>
+
     <div class="pagination">
       <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">Previous</button>
 
@@ -405,9 +413,10 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useItemInventory } from '../../composables/useItemInventory'
 
+const loading = ref(true)
 const {
   //items,
 
@@ -450,7 +459,12 @@ const {
   currentPage,
 } = useItemInventory()
 
-onMounted(() => {
-  fetchItems()
+onMounted(async () => {
+  try {
+    loading.value = true
+    await fetchItems()
+  } finally {
+    loading.value = false
+  }
 })
 </script>

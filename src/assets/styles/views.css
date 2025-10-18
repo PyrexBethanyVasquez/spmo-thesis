@@ -159,7 +159,7 @@
   display: inline-block;
 }
 
-.search-bar {
+.search-bar-dashboard {
   display: flex;
   align-items: center;
   background-color: #e9eef5; /* pill background */
@@ -169,19 +169,24 @@
   margin-bottom: 1.5rem;
   transition: box-shadow 0.3s;
 }
-
-.search-bar:focus-within {
-  border-color: #3182ce;
-  box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.3);
-}
-
-.search-bar ion-icon {
+.search-bar-dashboard ion-icon {
   font-size: 1.2rem;
   margin-right: 0.5rem;
-  color: #6b7280;
+  color: #313030;
 }
 
-.search-bar input {
+.search-bar-dashboard:focus-within {
+  border-color: #ffcc00;
+  box-shadow: 0 0 0 3px rgba(179, 147, 5, 0.2);
+}
+
+.search-bar-dashboard:focus-within ion-icon {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+  color: #ffcc00;
+}
+
+.search-bar-dashboard input {
   flex: 1;
   border: none;
   outline: none;
@@ -189,7 +194,7 @@
   background: transparent;
 }
 
-.search-bar input::placeholder {
+.search-bar-dashboard input::placeholder {
   color: #6b6b6b;
 }
 

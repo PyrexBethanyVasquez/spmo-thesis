@@ -7,7 +7,7 @@
 
         <!-- Search -->
         <div class="search-wrapper">
-          <div class="search-bar">
+          <div class="search-bar-dashboard">
             <ion-icon name="search-outline" />
             <input v-model="searchQuery" placeholder="Search items" />
           </div>
@@ -31,122 +31,148 @@
 
       <p class="dashboard-subtitle">Quick overview of system stats</p>
 
-      <!-- Summary Cards -->
-      <div class="card-grid">
-        <div class="dashboard-card">
-          <ion-icon name="cube-outline" />
-          <h3>Total Items</h3>
-          <p>{{ totalItems }}</p>
-        </div>
-
-        <div class="dashboard-card">
-          <ion-icon name="qr-code-outline" />
-          <h3>Tagged Items</h3>
-          <p>{{ taggedItems }}</p>
-          <span> "Under Development"</span>
-        </div>
-
-        <div class="dashboard-card">
-          <ion-icon name="construct-outline" />
-          <h3>Unserviceable / For Disposal</h3>
-          <p>{{ damagedItems }}</p>
-          <span> "Under Development"</span>
-        </div>
-
-        <div class="dashboard-card">
-          <ion-icon name="swap-horizontal-outline" />
-          <h3>Transactions Today</h3>
-          <p>{{ todayTransactions }}</p>
-          <span> "Under Development"</span>
-        </div>
-      </div>
-
-      <!-- Graph Section -->
-      <div class="charts-section">
-        <h3>Visual Overview</h3>
-        <div class="charts-grid">
-          <div class="chart-box">
-            <canvas id="barChart"></canvas>
-            <p>Items by Condition</p>
+      <!-- Skeleton while loading -->
+      <transition name="fade">
+        <div v-if="loading" class="skeleton-wrapper">
+          <!-- Skeleton Cards -->
+          <div class="card-grid">
+            <div class="skeleton-card" v-for="n in 4" :key="'card-' + n"></div>
           </div>
-          <div class="chart-box">
-            <canvas id="pieChart"></canvas>
-            <p>Tagged vs Untagged</p>
-            <span> "Under Development"</span>
+
+          <!-- Skeleton Charts -->
+          <div class="charts-grid">
+            <div class="skeleton-chart" v-for="n in 3" :key="'chart-' + n"></div>
           </div>
-          <div class="chart-box">
-            <canvas id="lineChart"></canvas>
-            <p>Transactions Over Time</p>
-            <span> "Under Development"</span>
+
+          <!-- Skeleton Overview -->
+          <div class="overview-grid">
+            <div class="skeleton-overview" v-for="n in 4" :key="'overview-' + n"></div>
+          </div>
+
+          <!-- Skeleton Table -->
+          <div class="skeleton-table">
+            <div class="skeleton-row" v-for="n in 3" :key="n"></div>
           </div>
         </div>
-      </div>
 
-      <!-- System Overview -->
-      <div class="system-overview">
-        <h3>System Overview</h3>
-        <div class="overview-grid">
-          <div class="overview-box">
-            <ion-icon name="people-outline" />
-            <div>
-              <h4>Total Users</h4>
-              <p>{{ totalUsers }}</p>
+        <div v-else>
+          <!-- Summary Cards -->
+          <div class="card-grid">
+            <div class="dashboard-card">
+              <ion-icon name="cube-outline" />
+              <h3>Total Items</h3>
+              <p>{{ totalItems }}</p>
+            </div>
+
+            <div class="dashboard-card">
+              <ion-icon name="qr-code-outline" />
+              <h3>Tagged Items</h3>
+              <p>{{ taggedItems }}</p>
+              <span>"Under Development"</span>
+            </div>
+
+            <div class="dashboard-card">
+              <ion-icon name="construct-outline" />
+              <h3>Unserviceable / For Disposal</h3>
+              <p>{{ damagedItems }}</p>
+              <span>"Under Development"</span>
+            </div>
+
+            <div class="dashboard-card">
+              <ion-icon name="swap-horizontal-outline" />
+              <h3>Transactions Today</h3>
+              <p>{{ todayTransactions }}</p>
+              <span>"Under Development"</span>
             </div>
           </div>
 
-          <div class="overview-box">
-            <ion-icon name="people-outline" />
-            <div>
-              <h4>Total Supplier</h4>
-              <p>{{ totalSuppliers }}</p>
+          <!-- Graph Section -->
+          <div class="charts-section">
+            <h3>Visual Overview</h3>
+            <div class="charts-grid">
+              <div class="chart-box">
+                <canvas id="barChart"></canvas>
+                <p>Items by Condition</p>
+              </div>
+              <div class="chart-box">
+                <canvas id="pieChart"></canvas>
+                <p>Tagged vs Untagged</p>
+                <span>"Under Development"</span>
+              </div>
+              <div class="chart-box">
+                <canvas id="lineChart"></canvas>
+                <p>Transactions Over Time</p>
+                <span>"Under Development"</span>
+              </div>
             </div>
           </div>
 
-          <div class="overview-box">
-            <ion-icon name="bar-chart-outline" />
-            <div>
-              <h4>Reports Generated</h4>
-              <p>{{ totalReports }}</p>
-              <span> "Under Development"</span>
+          <!-- System Overview -->
+          <div class="system-overview">
+            <h3>System Overview</h3>
+            <div class="overview-grid">
+              <div class="overview-box">
+                <ion-icon name="people-outline" />
+                <div>
+                  <h4>Total Users</h4>
+                  <p>{{ totalUsers }}</p>
+                </div>
+              </div>
+
+              <div class="overview-box">
+                <ion-icon name="people-outline" />
+                <div>
+                  <h4>Total Supplier</h4>
+                  <p>{{ totalSuppliers }}</p>
+                </div>
+              </div>
+
+              <div class="overview-box">
+                <ion-icon name="bar-chart-outline" />
+                <div>
+                  <h4>Reports Generated</h4>
+                  <p>{{ totalReports }}</p>
+                  <span>"Under Development"</span>
+                </div>
+              </div>
+
+              <div class="overview-box">
+                <ion-icon name="time-outline" />
+                <div>
+                  <h4>Pending Requests</h4>
+                  <p>N/A</p>
+                  <span>"Under Development"</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="overview-box">
-            <ion-icon name="time-outline" />
-            <div>
-              <h4>Pending Requests</h4>
-              <p>N/A</p>
-              <span> "Under Development"</span>
-            </div>
+          <!-- Recent Transactions -->
+          <div class="recent-transactions">
+            <h3>Recent Transactions</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Added by</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="t in recentTransactions" :key="t.id">
+                  <td>{{ t.item_name }}</td>
+                  <td>{{ t.recipient }}</td>
+                  <td>{{ t.department }}</td>
+                  <td>{{ t.status }}</td>
+                  <td>{{ t.date }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
-
-      <!-- Recent Transactions -->
-      <div class="recent-transactions">
-        <h3>Recent Transactions</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Added by</th>
-              <th>Department</th>
-              <th>Status</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="t in recentTransactions" :key="t.id">
-              <td>{{ t.item_name }}</td>
-              <td>{{ t.recipient }}</td>
-              <td>{{ t.department }}</td>
-              <td>{{ t.status }}</td>
-              <td>{{ t.date }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <!-- <pre>{{ recentTransactions }}</pre> -->
-      </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -175,6 +201,7 @@ const searchQuery = ref('')
 const searchResults = ref([])
 const condition_names = ref([])
 const recentTransactions = ref([])
+const loading = ref(true)
 
 watch(searchQuery, (newVal) => {
   if (!newVal.trim()) searchResults.value = []
@@ -458,15 +485,73 @@ onMounted(async () => {
   if (role.value === 'admin') {
     await fetchTotalItems()
     await fetchTotalUsers()
-    await fetchConditions()
     await fetchItemsWithPO()
     await fetchRecentTransactions()
+    loading.value = false
+    await fetchConditions()
     //initCharts()
   }
 })
 </script>
 
 <style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.6s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.skeleton-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.skeleton-card,
+.skeleton-chart,
+.skeleton-overview,
+.skeleton-row {
+  background: linear-gradient(90deg, #eee 25%, #f7f7f7 50%, #eee 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.card-grid .skeleton-card {
+  height: 120px;
+}
+
+.charts-grid .skeleton-chart {
+  height: 200px;
+}
+
+.overview-grid .skeleton-overview {
+  height: 80px;
+}
+
+.skeleton-table {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.skeleton-table .skeleton-row {
+  height: 20px;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
 .dashboard {
   padding: 20px;
 }

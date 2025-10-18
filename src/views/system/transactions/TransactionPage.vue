@@ -17,46 +17,53 @@
       </select>
     </div>
 
-    <!-- Transactions Table -->
-    <div class="table-wrapper">
-      <table class="transactions-table">
-        <thead>
-          <tr>
-            <th>Item No</th>
-            <th>Item Name</th>
-            <th>Department</th>
-            <th>Status</th>
-            <th>Created By</th>
-            <th>Location</th>
-            <th>Serial</th>
-            <th>Brand</th>
-            <th>Created_at</th>
-            <th>Updated_at</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="txn in filteredTransactions" :key="txn.id">
-            <td>{{ txn.item_no }}</td>
-            <td>{{ txn.item_name }}</td>
-            <td>{{ txn.dept_name }}</td>
-            <td>
-              <span :class="['status-label', txn.status_name.toLowerCase()]">
-                {{ txn.status_name }}
-              </span>
-            </td>
-            <td>{{ txn.user_name || 'Admin' }}</td>
-            <td>{{ txn.location }}</td>
-            <td>{{ txn.serial_no }}</td>
-            <td>{{ txn.model_brand }}</td>
-            <td>{{ new Date(txn.date).toLocaleString() }}</td>
-            <td>{{ txn.updated_at }}</td>
-          </tr>
-          <tr v-if="filteredTransactions.length === 0">
-            <td colspan="9" class="no-data">No transactions found.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <transition name="fade" mode="out-in">
+      <!-- 🔹 Skeleton loader when loading -->
+      <div v-if="loading" key="loading" class="table-skeleton">
+        <div class="skeleton-row" v-for="n in 3" :key="n"></div>
+      </div>
+
+      <!-- Transactions Table -->
+      <div v-else key="data" class="table-wrapper">
+        <table class="transactions-table">
+          <thead>
+            <tr>
+              <th>Item No</th>
+              <th>Item Name</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Created By</th>
+              <th>Location</th>
+              <th>Serial</th>
+              <th>Brand</th>
+              <th>Created_at</th>
+              <th>Updated_at</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="txn in filteredTransactions" :key="txn.id">
+              <td>{{ txn.item_no }}</td>
+              <td>{{ txn.item_name }}</td>
+              <td>{{ txn.dept_name }}</td>
+              <td>
+                <span :class="['status-label', txn.status_name.toLowerCase()]">
+                  {{ txn.status_name }}
+                </span>
+              </td>
+              <td>{{ txn.user_name || 'Admin' }}</td>
+              <td>{{ txn.location }}</td>
+              <td>{{ txn.serial_no }}</td>
+              <td>{{ txn.model_brand }}</td>
+              <td>{{ new Date(txn.date).toLocaleString() }}</td>
+              <td>{{ txn.updated_at }}</td>
+            </tr>
+            <tr v-if="filteredTransactions.length === 0">
+              <td colspan="9" class="no-data">No transactions found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -71,6 +78,7 @@ export default {
       actions: [],
       searchQuery: '',
       filterStatus: '',
+      loading: true,
     }
   },
   computed: {
@@ -95,6 +103,7 @@ export default {
   async mounted() {
     await this.fetchActions()
     await this.fetchTransactions()
+    this.loading = false
   },
   methods: {
     async fetchTransactions() {
@@ -144,6 +153,55 @@ export default {
 </script>
 
 <style scoped>
+/* --- Table Skeleton (Supabase-style) --- */
+/* --- Table Skeleton (Supabase-style stair effect) --- */
+.skeleton-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.skeleton-row {
+  height: 20px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  background: #e0e0e0;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+/* Row width variations for stair effect */
+.skeleton-row:nth-child(1) {
+  width: 100%; /* Longest */
+}
+.skeleton-row:nth-child(2) {
+  width: 70%; /* Medium */
+}
+.skeleton-row:nth-child(3) {
+  width: 40%; /* Shortest */
+}
+
+/* Pulse shimmer */
+@keyframes pulse {
+  0% {
+    background-color: #e0e0e0;
+  }
+  50% {
+    background-color: #f5f5f5;
+  }
+  100% {
+    background-color: #e0e0e0;
+  }
+}
+
+/* Optional fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 .transactions-page {
   padding: 24px;
 }

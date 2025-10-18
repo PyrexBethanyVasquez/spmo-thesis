@@ -16,102 +16,84 @@
 
     <p>View all items with their associated transaction details</p>
 
-    <hr />
-    <br />
-    <!-- Summary Cards -->
-    <div class="summary-cards">
-      <div class="summary-card">
-        <h3>Total Items</h3>
-        <p>{{ totalItems }}</p>
-      </div>
-      <div class="summary-card">
-        <h3>Total Purchase Orders</h3>
-        <p>{{ totalPOs }}</p>
-      </div>
-      <div class="summary-card">
-        <h3>Total Suppliers</h3>
-        <p>{{ totalSuppliers }}</p>
-      </div>
-    </div>
+    <div>
+      <hr />
+      <br />
 
-    <div class="table-wrapper">
-      <table class="reports-table">
-        <thead>
-          <tr>
-            <th>
-              Item Name
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Property No
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Location
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Department
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Status
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Serial No
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Model/Brand
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Item Acquired
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Purchase Order
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Supplier
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Total Amount
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-            <th>
-              Order Date
-              <span class="resize-handle" @mousedown="startResize"></span>
-            </th>
-          </tr>
-        </thead>
+      <!-- ✅ Summary Cards -->
+      <transition name="fade" mode="out-in">
+        <div v-if="loading" class="summary-cards">
+          <div class="summary-card" v-for="n in 3" :key="'skeleton-card-' + n">
+            <div class="skeleton-card-title"></div>
+            <div class="skeleton-card-value"></div>
+          </div>
+        </div>
+        <div v-else class="summary-cards">
+          <div class="summary-card">
+            <h3>Total Items</h3>
+            <p>{{ totalItems }}</p>
+          </div>
+          <div class="summary-card">
+            <h3>Total Purchase Orders</h3>
+            <p>{{ totalPOs }}</p>
+          </div>
+          <div class="summary-card">
+            <h3>Total Suppliers</h3>
+            <p>{{ totalSuppliers }}</p>
+          </div>
+        </div>
+      </transition>
 
-        <tbody>
-          <tr
-            v-for="item in itemsWithPO"
-            :key="item.item_no"
-            :class="{ 'has-po': item.purchase_order }"
-          >
-            <td>{{ item.name }}</td>
-            <td>{{ item.property_no }}</td>
-            <td>{{ item.location }}</td>
-            <td>{{ item.department?.dept_name || '-' }}</td>
-            <td>{{ item.action.action_name }}</td>
-            <td>{{ item.serial_no }}</td>
-            <td>{{ item.model_brand }}</td>
-            <td>{{ item.date_acquired }}</td>
-            <td>{{ item.purchase_order?.po_no || '-' }}</td>
-            <td>{{ item.purchase_order?.supplier || '-' }}</td>
-            <td>
-              {{ item.purchase_order?.total_amount ? '₱' + item.purchase_order.total_amount : '-' }}
-            </td>
-            <td>{{ item.purchase_order?.order_date || '-' }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- ✅ Table Section -->
+      <transition name="fade" mode="out-in">
+        <div v-if="loading" class="skeleton-table">
+          <table>
+            <thead>
+              <tr>
+                <th v-for="n in 6" :key="'header-' + n">
+                  <div class="skeleton-header"></div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in 6" :key="'row-' + r">
+                <td v-for="c in 6" :key="'col-' + c">
+                  <div class="skeleton-cell"></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div v-else class="table-wrapper">
+          <table class="reports-table">
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>Property No</th>
+                <th>Location</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th>Supplier</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="item in itemsWithPO"
+                :key="item.item_no"
+                :class="{ 'has-po': item.purchase_order }"
+              >
+                <td>{{ item.name }}</td>
+                <td>{{ item.property_no }}</td>
+                <td>{{ item.location }}</td>
+                <td>{{ item.department?.dept_name || '-' }}</td>
+                <td>{{ item.action?.action_name || '-' }}</td>
+                <td>{{ item.purchase_order?.supplier || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -131,12 +113,15 @@ export default {
       totalPOs: 0,
       totalSuppliers: 0,
       departments: [],
+      loading: true,
     }
   },
   async mounted() {
+    this.loading = true
     await this.fetchItems()
     await this.fetchDepartments()
     this.calculateSummary()
+    this.loading = false
   },
   methods: {
     async fetchItems() {
@@ -221,6 +206,70 @@ export default {
 </script>
 
 <style scoped>
+/* --- Skeleton Animation --- */
+@keyframes pulse {
+  0% {
+    background-color: #f0f0f0;
+  }
+  50% {
+    background-color: #e0e0e0;
+  }
+  100% {
+    background-color: #f0f0f0;
+  }
+}
+
+/* --- Cards --- */
+.summary-cards {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.summary-card {
+  flex: 1;
+  padding: 1.2rem;
+  background: #fff;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Skeleton for cards */
+.skeleton-card-title,
+.skeleton-card-value {
+  height: 16px;
+  margin: 1.5rem 0;
+  border-radius: 6px;
+  animation: pulse 1.5s infinite;
+}
+.skeleton-card-title {
+  width: 60%;
+  margin: 0.3rem auto;
+}
+.skeleton-card-value {
+  width: 40%;
+  margin: 0.5rem auto;
+  height: 20px;
+}
+
+/* --- Table Skeleton --- */
+.skeleton-table .skeleton-header,
+.skeleton-table .skeleton-cell {
+  height: 20px;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
+}
+
 .reports-page {
   padding: 2rem;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
