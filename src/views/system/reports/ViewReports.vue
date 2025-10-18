@@ -195,7 +195,7 @@ export default {
         item.name,
         item.property_no,
         item.location,
-        item.dept_name,
+        item.department?.dept_name || 'N/A',
         item.action?.action_name || 'Unknown',
         item.serial_no,
         item.model_brand,
