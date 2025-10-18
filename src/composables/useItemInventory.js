@@ -10,6 +10,7 @@ export function useItemInventory() {
 
   // --- Reactive State ---
   const items = ref([])
+  const receipient = ref([])
   const searchQuery = ref('ITM-25-')
   const purchaseOrders = ref([])
   const conditions = ref([])
@@ -20,6 +21,7 @@ export function useItemInventory() {
   const showPoForm = ref(false)
   const showConditionForm = ref(false)
   const showConfirm = ref(false)
+  const showReceipientForm = ref(false)
   const itemToDelete = ref(null)
   const recentlyAddedItemId = ref(null)
 
@@ -46,6 +48,13 @@ export function useItemInventory() {
     po_no: '',
     condition_id: '',
     dept_id: '',
+    indiv_txn_id: '',
+  })
+
+  const newReceipient = ref({
+    recipient_name: '',
+    dept_position: '',
+    remarks: '',
   })
 
   const newPurchaseOrder = ref({
@@ -85,7 +94,8 @@ export function useItemInventory() {
         `
         *,
         action:status(action_id,action_name),
-        department:dept_id(dept_id,dept_name)
+        department:dept_id(dept_id,dept_name),
+        individual_transaction:indiv_txn_id(recipient_name,dept_position,remarks)
       `,
         { count: 'exact' },
       )
@@ -110,6 +120,7 @@ export function useItemInventory() {
             dept_id: item.department?.dept_id || '',
             dept_name: item.department?.dept_name || 'N/A',
             condition_name: item.condition?.condition_name || 'N/A',
+            recipient_name: item.receipient?.recipient_name || 'N/A',
           }
         } catch {
           return { ...item, qrCode: '' }
@@ -120,6 +131,14 @@ export function useItemInventory() {
     totalItems.value = count
     totalPages.value = Math.ceil(count / pageSize.value)
     currentPage.value = page
+  }
+
+  async function fetchRecipient() {
+    const { data, error } = await supabase.from('individual_transaction').select('*')
+    if (error) {
+      toast.error('Error fetching recipient: ' + error.message)
+      receipient.value = []
+    } else receipient.value = data || []
   }
 
   async function fetchActions() {
@@ -172,6 +191,7 @@ export function useItemInventory() {
       po_no: newItem.value.po_no || null,
       condition_id: newItem.value.condition_id || null,
       dept_id: newItem.value.dept_id || null,
+      indiv_txn_id: newItem.value.indiv_txn_id || null,
     }
 
     const { data: itemData, error: itemError } = await supabase
@@ -196,6 +216,7 @@ export function useItemInventory() {
       item_no: newItemId,
       dept_id: cleanItem.dept_id,
       action_id: cleanItem.status,
+      indiv_txn_id: cleanItem.indiv_txn_id,
       user_id: user?.id || null,
       date: new Date().toISOString(),
     }
@@ -207,6 +228,28 @@ export function useItemInventory() {
     resetNewItem()
   }
   // --- Additional CRUD: Purchase Orders, Conditions, Departments ---
+  async function addReceipient() {
+    const { data, error } = await supabase
+      .from('individual_transaction')
+      .insert([newReceipient.value])
+      .select()
+
+    if (error) {
+      toast.error('Error adding receipient: ' + error.message)
+      return
+    }
+
+    toast.success('New Reciever name added successfully!')
+    await fetchRecipient()
+
+    if (data && data.length > 0) {
+      newItem.value.indiv_txn_id = data[0].indiv_txn_id
+    }
+
+    newReceipient.value = { recipient_name: '', dept_position: '', remarks: '' }
+    showReceipientForm.value = false
+  }
+
   async function addPurchaseOrder() {
     const { data, error } = await supabase
       .from('purchase_order')
@@ -272,7 +315,6 @@ export function useItemInventory() {
     if (newItem.value.condition_id === 'add-new') {
       showConditionForm.value = true
       newItem.value.condition_id = ''
-      console.log('Modal should open now!')
     }
   }
 
@@ -287,6 +329,13 @@ export function useItemInventory() {
     if (event.target.value === 'add-new') {
       showPoForm.value = true
       newItem.value.po_no = ''
+    }
+  }
+
+  function handleRecipientChange(event) {
+    if (event.target.value === 'add-new') {
+      showReceipientForm.value = true
+      newItem.value.indiv_txn_id = ''
     }
   }
 
@@ -342,6 +391,10 @@ export function useItemInventory() {
     if (!editingItem.value.dept_id) editingItem.value.dept_id = ''
     if (!editingItem.value.condition_id) editingItem.value.condition_id = ''
     if (!editingItem.value.po_no) editingItem.value.po_no = ''
+  }
+
+  function cancelEdit() {
+    editingItem.value = null
   }
 
   function askDelete(itemId) {
@@ -423,6 +476,7 @@ export function useItemInventory() {
     await fetchConditions()
     await fetchActions()
     await fetchDepartments()
+    await fetchRecipient()
 
     const savedId = localStorage.getItem('recentlyAddedItemId')
     if (savedId) recentlyAddedItemId.value = savedId
@@ -434,12 +488,14 @@ export function useItemInventory() {
     items,
     searchQuery,
     filteredItems,
+    receipient,
     purchaseOrders,
     conditions,
     actions,
     departments,
     showDeptForm,
     showPoForm,
+    showReceipientForm,
     showConditionForm,
     showConfirm,
     showAddForm,
@@ -450,6 +506,7 @@ export function useItemInventory() {
     totalPages,
     currentPage,
     itemToDelete,
+    newReceipient,
     newPurchaseOrder,
     newCondition,
     newDepartment,
@@ -458,19 +515,23 @@ export function useItemInventory() {
 
     // methods
     fetchItems,
+    fetchRecipient,
     fetchPurchaseOrders,
     fetchConditions,
     fetchActions,
     fetchDepartments,
     addItem,
+    addReceipient,
     addPurchaseOrder,
     addCondition,
     addDepartment,
     handleConditionChange,
     handlePOChange,
     handleDeptChange,
+    handleRecipientChange,
     updateItem,
     cancelAdd,
+    cancelEdit,
     editItem,
     askDelete,
     confirmDelete,
