@@ -32,10 +32,12 @@
               <th>Item Name</th>
               <th>Department</th>
               <th>Status</th>
-              <th>Created By</th>
+
               <th>Location</th>
-              <th>Serial</th>
+              <th>Serial Number</th>
               <th>Brand</th>
+              <th>Received by</th>
+              <th>Created By</th>
               <th>Created_at</th>
               <th>Updated_at</th>
             </tr>
@@ -50,10 +52,12 @@
                   {{ txn.status_name }}
                 </span>
               </td>
-              <td>{{ txn.user_name || 'Admin' }}</td>
+
               <td>{{ txn.location }}</td>
               <td>{{ txn.serial_no }}</td>
               <td>{{ txn.model_brand }}</td>
+              <td>{{ txn.recipient_name }}</td>
+              <td>{{ txn.user_name || 'Admin' }}</td>
               <td>{{ new Date(txn.date).toLocaleString() }}</td>
               <td>{{ txn.updated_at }}</td>
             </tr>
@@ -117,7 +121,8 @@ export default {
           department:dept_id(dept_name),
           action:action_id(action_name),
           users:user_id(full_name),
-          action_id
+          action_id,
+          individual_transaction:indiv_txn_id(recipient_name)
         `,
         )
         .order('date', { ascending: false })
@@ -138,6 +143,7 @@ export default {
         model_brand: txn.item?.model_brand,
         location: txn.item?.location,
         dept_name: txn.department?.dept_name || 'N/A',
+        recipient_name: txn.individual_transaction?.recipient_name || 'N/A',
         status_name: txn.action?.action_name || 'Issued',
         status_id: txn.action_id,
         user_name: txn.users?.full_name || 'Admin',
@@ -215,6 +221,7 @@ h1 {
   display: flex;
   gap: 12px;
   margin-bottom: 20px;
+  flex-wrap: wrap; /* wrap on small screens */
 }
 
 .filters input,
@@ -223,7 +230,7 @@ h1 {
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 14px;
-  flex: 1;
+  flex: 1 1 150px; /* allow shrinking and growing */
 }
 
 .filters button {
@@ -244,25 +251,27 @@ h1 {
   overflow-x: auto;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
   border-radius: 8px;
+  max-width: 100%;
 }
 
 .transactions-table {
   width: 100%;
   border-collapse: collapse;
+  width: max-content;
 }
 
 .transactions-table th,
 .transactions-table td {
   border-bottom: 1px solid #ddd; /* Only horizontal line */
   padding: 12px 8px;
-  text-align: left;
+  text-align: center;
 }
 
 .transactions-table th {
   background-color: #a7b982;
   color: #1b1b1b;
   font-weight: 600;
-  position: sticky;
+  position: relative;
   top: 0;
 }
 
@@ -286,7 +295,7 @@ h1 {
   font-size: 12px;
   font-weight: 500;
   text-transform: capitalize;
-  color: rgb(255, 255, 255);
+  color: #fff;
 }
 
 .no-data {
@@ -294,5 +303,41 @@ h1 {
   padding: 16px;
   color: #7f8c8d;
   font-style: italic;
+}
+
+/* ================== Responsive ================== */
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: column;
+  }
+
+  .filters input,
+  .filters select,
+  .filters button {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .transactions-table {
+    font-size: 12px;
+    min-width: 100%;
+  }
+
+  .transactions-table th,
+  .transactions-table td {
+    padding: 8px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .transactions-table th,
+  .transactions-table td {
+    padding: 6px 4px;
+  }
+
+  .status-label {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
 }
 </style>

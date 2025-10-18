@@ -75,6 +75,12 @@
                 <th>Department</th>
                 <th>Status</th>
                 <th>Supplier</th>
+                <th>Serial Number</th>
+                <th>Model / Brand</th>
+                <th>Purchase Order</th>
+                <th>Total Amount</th>
+                <th>Date Acquired</th>
+                <th>Order Date</th>
               </tr>
             </thead>
             <tbody>
@@ -89,6 +95,17 @@
                 <td>{{ item.department?.dept_name || '-' }}</td>
                 <td>{{ item.action?.action_name || '-' }}</td>
                 <td>{{ item.purchase_order?.supplier || '-' }}</td>
+                <td>{{ item.serial_no }}</td>
+                <td>{{ item.model_brand }}</td>
+
+                <td>{{ item.purchase_order?.po_no || '-' }}</td>
+                <td>
+                  {{
+                    item.purchase_order?.total_amount ? '₱' + item.purchase_order.total_amount : '-'
+                  }}
+                </td>
+                <td>{{ item.date_acquired }}</td>
+                <td>{{ item.purchase_order?.order_date || '-' }}</td>
               </tr>
             </tbody>
           </table>

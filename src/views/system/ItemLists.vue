@@ -114,6 +114,7 @@ onMounted(async () => {
               <td>{{ item.model_brand }}</td>
               <td>{{ item.date_acquired }}</td>
               <td>{{ item.condition_name || 'N/A' }}</td>
+              <td>{{ item.recipient_name || 'N/A' }}</td>
               <td>
                 <span v-if="item.po_no" class="po-badge">
                   Purchase Order Number: {{ item.po_no }}

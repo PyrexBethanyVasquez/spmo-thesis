@@ -112,6 +112,26 @@
             </select>
           </div>
         </div>
+
+        <!-- Recipient Form -->
+        <div class="recipient-section">
+          <label for="recipient">Recipient</label>
+          <div class="recipient-inputs">
+            <select
+              id="recipient"
+              v-model="newItem.indiv_txn_id"
+              @change="handleRecipientChange"
+              required
+            >
+              <option disabled value="">-- Select Recipient --</option>
+              <option v-for="rec in receipient" :key="rec.indiv_txn_id" :value="rec.indiv_txn_id">
+                {{ rec.recipient_name }} ({{ rec.dept_position }})
+              </option>
+              <option disabled>──────────</option>
+              <option value="add-new">+ Add New Recipient</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- Form Actions -->
@@ -199,6 +219,27 @@
       <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">
         Next
       </button>
+    </div>
+
+    <!-- Recipient Modal -->
+    <div v-if="showReceipientForm" class="modal">
+      <div class="modal-content">
+        <h3>Add Recipient</h3>
+        <label>Recipient Name</label>
+        <input v-model="newReceipient.recipient_name" placeholder="Recipient Name" required />
+        <label>Recipient Position</label>
+        <input
+          v-model="newReceipient.dept_position"
+          placeholder="Recipient Position Name"
+          required
+        />
+        <label>Remarks</label>
+        <input v-model="newReceipient.remarks" placeholder="Remarks" required />
+        <div class="modal-actions">
+          <button @click="addReceipient">Save</button>
+          <button @click="showReceipientForm = false">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <!-- Purchase Order Modal -->
@@ -421,15 +462,18 @@ const {
   //items,
 
   addItem,
+  addReceipient,
   addPurchaseOrder,
   addCondition,
   addDepartment,
   handleConditionChange,
   handlePOChange,
   handleDeptChange,
+  handleRecipientChange,
   updateItem,
   askDelete,
   cancelAdd,
+  cancelEdit,
   editItem,
   confirmDelete,
   goToPage,
@@ -438,6 +482,7 @@ const {
   fetchItems,
 
   newItem,
+  newReceipient,
   newPurchaseOrder,
   newCondition,
   newDepartment,
@@ -448,9 +493,11 @@ const {
   purchaseOrders,
   conditions,
   actions,
+  receipient,
   departments,
   showDeptForm,
   showPoForm,
+  showReceipientForm,
   showConditionForm,
   showConfirm,
   stickerItem,
