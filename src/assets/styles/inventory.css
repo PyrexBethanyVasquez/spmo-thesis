@@ -696,6 +696,13 @@ select option[disabled] {
   display: block;
 }
 
+.item-form label[for='recipient'] {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1px;
+  display: block;
+}
+
 .status-section {
   display: flex;
   flex-direction: column;
@@ -809,6 +816,10 @@ select option[disabled] {
   color: #2563eb;
 }
 
+.recipient-inputs select option[value='add-new'] {
+  font-weight: 600;
+  color: #2563eb;
+}
 .condition-section {
   display: flex;
   flex-direction: column;
@@ -922,6 +933,65 @@ select option[disabled] {
 
   .dept-section select,
   .dept-section button {
+    width: 100%;
+  }
+}
+
+.recipient-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.recipient-inputs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.recipient-inputs select {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border 0.2s;
+}
+
+.recipient-inputs select:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.recipient-inputs button {
+  padding: 6px 12px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.recipient-inputs button:hover {
+  background-color: #1d4ed8;
+}
+
+@media (max-width: 600px) {
+  .recipient-section .dept-inputs {
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0; /* reset margin on small screens */
+  }
+
+  .recipient-section select,
+  .recipient-section button {
     width: 100%;
   }
 }
