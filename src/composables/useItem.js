@@ -8,6 +8,7 @@ export function useItems() {
 
   // Reactive states
   const items = ref([])
+  const recipient = ref([])
   const actions = ref([])
   const purchaseOrders = ref([])
   const condition_names = ref([])
@@ -34,6 +35,7 @@ export function useItems() {
     'Model/Brand',
     'Date Acquired',
     'Item Condition',
+    'Receiver',
     'Purchase Order Linked',
     'Item Sticker',
     'Actions',
@@ -58,7 +60,8 @@ export function useItems() {
         *,
         condition:condition_id(condition_name),
         action:status(action_id, action_name),
-        department:dept_id(dept_name)
+        department:dept_id(dept_name),
+        individual_transaction:indiv_txn_id(recipient_name)
       `,
         { count: 'exact' },
       )
@@ -72,6 +75,7 @@ export function useItems() {
     }
 
     const { data, error, count } = await query
+    console.log(data)
 
     if (error) {
       toast.error('Error fetching items: ' + error.message)
@@ -89,6 +93,7 @@ export function useItems() {
             condition_name: item.condition?.condition_name || 'N/A',
             status: item.action?.action_name || 'Issued',
             dept_name: item.department?.dept_name || 'N/A',
+            recipient_name: item.individual_transaction?.recipient_name || 'N/A',
           }
         } catch (e) {
           console.warn('QR generation failed:', e)
@@ -98,6 +103,7 @@ export function useItems() {
             condition_name: item.condition?.condition_name || 'N/A',
             status: item.action?.action_name || 'Issued',
             dept_name: item.department?.dept_name || 'N/A',
+            recipient_name: item.individual_transaction?.recipient_name || 'N/A',
           }
         }
       }),
@@ -108,7 +114,16 @@ export function useItems() {
     currentPage.value = page
   }
 
-  // ✅ Other fetch functions
+  const fetchRecipient = async () => {
+    const { data, error } = await supabase
+      .from('individual_transaction')
+      .select('*')
+      .order('recipient_name')
+    if (error) toast.error(error.message)
+    else recipient.value = data
+  }
+
+  // fetch department functions
   const fetchDepartments = async () => {
     const { data, error } = await supabase.from('department').select('*').order('dept_name')
     if (error) toast.error(error.message)
@@ -228,6 +243,7 @@ export function useItems() {
     const { error } = await supabase.from('items').delete().eq('item_no', itemToDelete.value)
     if (error) toast.error(error.message)
     else await fetchItems()
+    toast.success('Item deleted successfully')
     showConfirm.value = false
   }
 
@@ -248,6 +264,7 @@ export function useItems() {
     await fetchPurchaseOrders()
     await fetchActions()
     await fetchDepartments()
+    await fetchRecipient()
   })
 
   // ✅ Computed Filter (client-side)
@@ -270,6 +287,7 @@ export function useItems() {
 
   return {
     items,
+    recipient,
     actions,
     purchaseOrders,
     condition_names,
