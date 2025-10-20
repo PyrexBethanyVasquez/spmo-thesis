@@ -14,7 +14,10 @@
 
       <!-- Error Message -->
       <transition name="fade">
-        <p v-if="authError" class="auth-error">{{ authError }}</p>
+        <div v-if="authError" class="auth-error-box">
+          <ion-icon name="warning-outline" class="auth-error-icon"></ion-icon>
+          <span class="auth-error-text">{{ authError }}</span>
+        </div>
       </transition>
 
       <!-- Login -->
@@ -76,7 +79,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../../clients/supabase.js'
-import { useToast } from 'vue-toastification'
 
 let email = ref('')
 let password = ref('')
@@ -84,7 +86,6 @@ let showPassword = ref(false)
 let rememberMe = ref(false)
 let authError = ref(null)
 
-const toast = useToast()
 const router = useRouter()
 const loading = ref(false)
 
@@ -116,7 +117,6 @@ async function login() {
 
   if (error) {
     authError.value = 'Invalid email or password'
-    toast.error('Invalid email or password')
   } else {
     const user = data.user
 

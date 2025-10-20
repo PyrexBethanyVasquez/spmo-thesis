@@ -465,3 +465,54 @@
 .modal-close-btn:hover {
   background: #1558b0;
 }
+
+.auth-error-box {
+  display: flex;
+  align-items: center;
+  background-color: #ffeaea;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+  box-shadow: 0 0 6px rgba(198, 40, 40, 0.2);
+  animation: shake 0.2s ease-in-out 0s 2;
+}
+
+.auth-error-icon {
+  font-size: 1.4rem;
+  margin-right: 8px;
+}
+
+.auth-error-text {
+  flex: 1;
+}
+
+/* --- Fade Animation --- */
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+/* --- Shake Animation --- */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
