@@ -23,6 +23,8 @@
             placeholder="Password"
             required
           />
+          <ion-icon v-if="isPasswordValid" name="checkmark-circle" class="success-icon"></ion-icon>
+
           <ion-icon
             :name="showPassword ? 'eye-off-outline' : 'eye-outline'"
             class="toggle-password"
@@ -39,6 +41,13 @@
             placeholder="Confirm Password"
             required
           />
+
+          <ion-icon
+            v-if="passwordsMatch && confirmPassword"
+            name="checkmark-circle"
+            class="success-icon"
+          ></ion-icon>
+
           <ion-icon
             :name="showConfirmPassword ? 'eye-off-outline' : 'eye-outline'"
             class="toggle-password"
@@ -59,10 +68,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../../clients/supabase.js'
+import { useToast } from 'vue-toastification'
 import router from '@/router/index.js'
 
+const toast = useToast()
 let email = ref('')
 let password = ref('')
 let confirmPassword = ref('')
@@ -73,6 +84,14 @@ let showConfirmPassword = ref(false)
 let passwordError = ref('')
 let confirmPasswordError = ref('')
 let successMessage = ref('')
+const isPasswordValid = computed(() => {
+  // Password must include at least one uppercase, one number, and one special character
+  const regex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,20}$/
+  return regex.test(password.value)
+})
+const passwordsMatch = computed(() => {
+  return password.value && confirmPassword.value && password.value === confirmPassword.value
+})
 
 // Fetch current user's role
 onMounted(async () => {
@@ -135,7 +154,7 @@ async function createaccount() {
   // Get current admin session token
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   if (sessionError || !sessionData.session) {
-    console.error('Unable to get session:', sessionError?.message)
+    toast.error('Unable to get session:', sessionError?.message)
     return
   }
   const token = sessionData.session.access_token
@@ -163,7 +182,7 @@ async function createaccount() {
       return
     }
 
-    successMessage.value = 'Account created successfully!'
+    toast.success('Account created successfully!')
     setTimeout(() => {
       router.push('/home')
     }, 1500)
@@ -175,6 +194,14 @@ async function createaccount() {
 </script>
 
 <style scoped>
+.success-icon {
+  position: absolute;
+  right: 40px; /* placed before the eye icon */
+  margin-top: 12px;
+  color: #28a745;
+  font-size: 1.2em;
+  transition: opacity 0.3s ease;
+}
 /* Background */
 .admin-wrapper {
   display: flex;
