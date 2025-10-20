@@ -46,7 +46,7 @@
 
           <!-- Skeleton Overview -->
           <div class="overview-grid">
-            <div class="skeleton-overview" v-for="n in 4" :key="'overview-' + n"></div>
+            <div class="skeleton-overview" v-for="n in 3" :key="'overview-' + n"></div>
           </div>
 
           <!-- Skeleton Table -->
@@ -127,17 +127,8 @@
               <div class="overview-box">
                 <ion-icon name="bar-chart-outline" />
                 <div>
-                  <h4>Reports Generated</h4>
+                  <h4>Reports Downloaded</h4>
                   <p>{{ totalReports }}</p>
-                  <span>"Under Development"</span>
-                </div>
-              </div>
-
-              <div class="overview-box">
-                <ion-icon name="time-outline" />
-                <div>
-                  <h4>Pending Requests</h4>
-                  <p>N/A</p>
                   <span>"Under Development"</span>
                 </div>
               </div>
@@ -760,5 +751,11 @@ span {
   background-color: #ffffff;
   color: #000000;
   text-align: left;
+}
+
+.recent-transactions table thead th {
+  background-color: #a7b982; /* green background */
+  color: #000000; /* white text for contrast */
+  font-weight: 600;
 }
 </style>

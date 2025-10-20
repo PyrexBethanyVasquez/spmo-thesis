@@ -155,6 +155,7 @@ export function useItems() {
         po_no: editingItem.value.po_no,
         condition_id: editingItem.value.condition_id,
         dept_id: editingItem.value.dept_id,
+        indiv_txn_id: editingItem.value.indiv_txn_id,
       }
 
       // Update item
@@ -179,6 +180,7 @@ export function useItems() {
         item_no: editingItem.value.item_no,
         action_id: editingItem.value.status,
         dept_id: editingItem.value.dept_id,
+        indiv_txn_id: editingItem.value.indiv_txn_id,
         user_id: userId,
         date: new Date().toISOString(),
       }
@@ -194,7 +196,7 @@ export function useItems() {
       await fetchItems()
       editingItem.value = null
     } catch (err) {
-      toast.error('Something went wrong while updating the item')
+      console.error('Something went wrong while updating the item')
       console.error(err)
     }
   }

@@ -118,7 +118,7 @@ export default {
           txn_id,
           date,
           item:item_no(name, item_no, serial_no, model_brand, location, updated_at),
-          department:dept_id(dept_name),
+          department:dept_id(dept_id,dept_name),
           action:action_id(action_name),
           users:user_id(full_name),
           action_id,

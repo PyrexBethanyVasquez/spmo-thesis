@@ -352,6 +352,7 @@ export function useItemInventory() {
         po_no: editingItem.value.po_no,
         condition_id: editingItem.value.condition_id,
         dept_id: editingItem.value.dept_id,
+        indiv_txn_id: editingItem.value.indiv_txn_id,
       }
 
       const { error: updateError } = await supabase
@@ -367,9 +368,12 @@ export function useItemInventory() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
+
       const transactionPayload = {
         item_no: editingItem.value.item_no,
         action_id: editingItem.value.status,
+        dept_id: editingItem.value.dept_id,
+        indiv_txn_id: editingItem.value.indiv_txn_id,
         user_id: user?.id || null,
         date: new Date().toISOString(),
       }
