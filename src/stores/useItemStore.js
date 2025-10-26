@@ -68,15 +68,29 @@ export const useItemStore = defineStore('items', {
       this.searchResults = []
     },
     async generateItemNo() {
-      const year = new Date().getFullYear().toString().slice(-2) // e.g. '25'
+      const year = new Date().getFullYear().toString().slice(-2)
 
-      // fetch count of existing items for this year
-      const { count } = await supabase
+      // get the latest item_no for this year
+      const { data, error } = await supabase
         .from('items')
-        .select('item_no', { count: 'exact', head: true })
+        .select('item_no')
         .ilike('item_no', `ITM-${year}-%`)
+        .order('item_no', { ascending: false })
+        .limit(1)
 
-      const next = (count + 1).toString().padStart(5, '0')
+      if (error) {
+        console.error('Error generating item number:', error)
+        return `ITM-${year}-00001`
+      }
+
+      let nextNum = 1
+      if (data && data.length > 0) {
+        const lastItemNo = data[0].item_no
+        const lastNum = parseInt(lastItemNo.split('-')[2])
+        nextNum = lastNum + 1
+      }
+
+      const next = nextNum.toString().padStart(5, '0')
       return `ITM-${year}-${next}`
     },
   },

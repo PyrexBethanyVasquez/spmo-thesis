@@ -65,16 +65,16 @@
             </div>
 
             <div class="dashboard-card">
+              <ion-icon name="cash-outline" />
+              <h3>Total Purchase Order</h3>
+              <p>₱ {{ totalPurchaseAmount.toLocaleString() }}</p>
+            </div>
+
+            <div class="dashboard-card">
               <ion-icon name="qr-code-outline" />
               <h3>Tagged Items</h3>
               <p>{{ taggedItems }}</p>
               <span>"Under Development"</span>
-            </div>
-
-            <div class="dashboard-card">
-              <ion-icon name="construct-outline" />
-              <h3>Unserviceable / For Disposal</h3>
-              <p>{{ damagedItems }}</p>
             </div>
 
             <div class="dashboard-card">
@@ -125,11 +125,12 @@
               </div>
 
               <div class="overview-box">
-                <ion-icon name="bar-chart-outline" />
+                <ion-icon name="construct-outline" />
+
                 <div>
-                  <h4>Reports Downloaded</h4>
-                  <p>{{ totalReports }}</p>
-                  <span>"Under Development"</span>
+                  <h4>Unserviceable / For Disposal</h4>
+
+                  <p>{{ damagedItems }}</p>
                 </div>
               </div>
             </div>
@@ -180,7 +181,7 @@ const router = useRouter()
 const role = ref('user')
 const totalItems = ref(0)
 const totalUsers = ref(0)
-const totalReports = ref(0)
+
 const totalPOs = ref(0)
 const itemsWithPO = ref([])
 const totalSuppliers = ref(0)
@@ -192,6 +193,7 @@ const searchResults = ref([])
 const condition_names = ref([])
 const recentTransactions = ref([])
 const loading = ref(true)
+const totalPurchaseAmount = ref(0)
 
 watch(searchQuery, (newVal) => {
   if (!newVal.trim()) searchResults.value = []
@@ -326,6 +328,15 @@ async function fetchItemsWithPO() {
   }
 
   itemsWithPO.value = data
+  // ✅ Calculate total purchase order amount
+  const totalAmount = data.reduce((sum, item) => {
+    // Ensure purchase_order and amount exist
+    const amount = item.purchase_order?.total_amount || 0
+    return sum + amount
+  }, 0)
+
+  console.log('Total Purchase Order Amount:', totalAmount)
+  totalPurchaseAmount.value = totalAmount
   calculateSummary()
 }
 
@@ -512,22 +523,31 @@ async function renderTransactionChart(transactions) {
 }
 
 async function fetchTodayTransactions() {
-  const today = new Date()
-  const yyyy = today.getFullYear()
-  const mm = String(today.getMonth() + 1).padStart(2, '0')
-  const dd = String(today.getDate()).padStart(2, '0')
-  const todayStr = `${yyyy}-${mm}-${dd}` // e.g., "2025-10-18"
+  // Force to Philippine Time (UTC+8)
+  const now = new Date()
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000
+  const philippineNow = new Date(utc + 8 * 60 * 60000)
+
+  const yyyy = philippineNow.getFullYear()
+  const mm = String(philippineNow.getMonth() + 1).padStart(2, '0')
+  const dd = String(philippineNow.getDate()).padStart(2, '0')
+  const todayStr = `${yyyy}-${mm}-${dd}`
+
+  const startOfDay = `${todayStr}T00:00:00+08:00`
+  const endOfDay = `${todayStr}T23:59:59+08:00`
 
   const { count, error } = await supabase
     .from('transaction')
     .select('*', { count: 'exact', head: true })
-    .eq('date', todayStr) // assuming your `date` column is DATE or string "YYYY-MM-DD"
+    .gte('date', startOfDay)
+    .lte('date', endOfDay)
 
   if (error) {
     console.error('Error fetching today transactions:', error.message)
     todayTransactions.value = 0
     return
   }
+  console.log('PH Date:', todayStr)
 
   todayTransactions.value = count || 0
 }
