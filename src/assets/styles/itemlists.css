@@ -135,6 +135,10 @@
   background-color: #029cd9;
 }
 
+.status-label.default {
+  background-color: #1c1c1c;
+}
+
 .filters {
   display: flex;
   align-items: center;
