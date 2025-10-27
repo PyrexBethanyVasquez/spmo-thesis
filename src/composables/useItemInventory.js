@@ -26,7 +26,7 @@ export function useItemInventory() {
   const recentlyAddedItemId = ref(null)
 
   const currentPage = ref(1)
-  const pageSize = ref(5)
+
   const totalItems = ref(0)
   const totalPages = ref(0)
 
@@ -72,35 +72,42 @@ export function useItemInventory() {
       const matchesSearch =
         !searchQuery.value ||
         item.name?.toLowerCase().includes(searchQuery.value.trim().toLowerCase()) ||
-        item.item_no?.toLowerCase().includes(searchQuery.value.trim().toLowerCase())
+        item.item_no?.toLowerCase().includes(searchQuery.value.trim().toLowerCase()) ||
+        item.property_no?.toLowerCase().includes(searchQuery.value.trim().toLowerCase()) ||
+        item.model_brand?.toLowerCase().includes(searchQuery.value.trim().toLowerCase()) ||
+        item.serial_no?.toLowerCase().includes(searchQuery.value.trim().toLowerCase())
 
       const matchesDepartment =
-        !selectedDepartment.value || item.dept_id === selectedDepartment.value
+        !selectedDepartment.value || item.department?.dept_name === selectedDepartment.value
 
-      const matchesStatus = !selectedStatus.value || item.status === selectedStatus.value
+      const matchesStatus = !selectedStatus.value || item.action?.action_id === selectedStatus.value
 
       return matchesSearch && matchesDepartment && matchesStatus
     })
   })
 
   // --- Fetch Methods ---
-  async function fetchItems(page = 1) {
-    const from = (page - 1) * pageSize.value
-    const to = from + pageSize.value - 1
-
-    const { data, error, count } = await supabase
+  async function fetchItems() {
+    let query = supabase
       .from('items')
       .select(
         `
-        *,
-        action:status(action_id,action_name),
-        department:dept_id(dept_id,dept_name),
-        individual_transaction:indiv_txn_id(recipient_name,dept_position,remarks)
+      *,
+      action:status(action_id, action_name),
+      department:dept_id(dept_id, dept_name),
+      individual_transaction:indiv_txn_id(recipient_name, dept_position, remarks)
       `,
         { count: 'exact' },
       )
       .order('date_acquired', { ascending: false })
-      .range(from, to)
+
+    if (searchQuery.value.trim()) {
+      query = query.or(
+        `item_no.ilike.%${searchQuery.value}%,name.ilike.%${searchQuery.value}%,property_no.ilike.%${searchQuery.value}%,model_brand.ilike.%${searchQuery.value}%,serial_no.ilike.%${searchQuery.value}%`,
+      )
+    }
+
+    const { data, error, count } = await query
 
     if (error) {
       toast.error('Error fetching items: ' + error.message)
@@ -112,15 +119,16 @@ export function useItemInventory() {
         try {
           const idForQr = item.item_no ?? item.id ?? ''
           const qrCode = await QRCode.toDataURL(String(idForQr), { width: 150, margin: 1 })
+
           return {
             ...item,
             qrCode,
             status: item.action?.action_id || null,
-            status_name: item.action?.action_name || 'Issued',
+            status_name: item.action?.action_name || 'Default',
             dept_id: item.department?.dept_id || '',
             dept_name: item.department?.dept_name || 'N/A',
             condition_name: item.condition?.condition_name || 'N/A',
-            recipient_name: item.receipient?.recipient_name || 'N/A',
+            recipient_name: item.individual_transaction?.recipient_name || 'N/A',
           }
         } catch {
           return { ...item, qrCode: '' }
@@ -129,8 +137,6 @@ export function useItemInventory() {
     )
 
     totalItems.value = count
-    totalPages.value = Math.ceil(count / pageSize.value)
-    currentPage.value = page
   }
 
   async function fetchRecipient() {
@@ -148,7 +154,7 @@ export function useItemInventory() {
       actions.value = []
     } else {
       actions.value = data || []
-      const goodAction = actions.value.find((a) => a.action_name === 'Issued')
+      const goodAction = actions.value.find((a) => a.action_name === 'Default')
       if (goodAction) newItem.value.status = goodAction.action_id
     }
   }
