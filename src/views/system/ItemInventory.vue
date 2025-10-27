@@ -148,8 +148,9 @@
     <div class="filters-search">
       <ion-icon name="search-outline" />
       <input
-        v-model.number="searchQuery"
+        v-model="searchQuery"
         placeholder="Search by item number, name, property no, or model..."
+        @input="fetchItems(1)"
       />
     </div>
 
@@ -210,16 +211,6 @@
         </table>
       </div>
     </transition>
-
-    <div class="pagination">
-      <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">Previous</button>
-
-      <span>Page {{ currentPage }} of {{ totalPages }}</span>
-
-      <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">
-        Next
-      </button>
-    </div>
 
     <!-- Recipient Modal -->
     <div v-if="showReceipientForm" class="modal">
@@ -476,7 +467,7 @@ const {
   cancelEdit,
   editItem,
   confirmDelete,
-  goToPage,
+
   openStickerModal,
   closeStickerModal,
   fetchItems,
@@ -502,8 +493,6 @@ const {
   showConfirm,
   stickerItem,
   recentlyAddedItemId,
-  totalPages,
-  currentPage,
 } = useItemInventory()
 
 onMounted(async () => {

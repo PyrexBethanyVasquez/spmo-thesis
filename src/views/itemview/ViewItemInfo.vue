@@ -24,34 +24,30 @@ const itemToDelete = ref(null)
 const editingItem = ref(null)
 const stickerItem = ref(null)
 const departments = ref([])
+const viewItem = ref(null)
+const recipients = ref([])
 
 // Table headers
 const itemHeaders = [
   'Item Name',
-  'Property No',
+  // 'Property No',
   'Location',
   'Department',
   'Status',
-  'Serial No',
-  'Model/Brand',
-  'Date Acquired',
+  // 'Serial No',
+  // 'Model/Brand',
+  // 'Date Acquired',
   'Item Condition',
-  'Purchase Order Linked',
-  'Item Sticker',
+  'Receiver',
+  'Purchase Order',
   'Actions',
 ]
-const poHeaders = ['Purchase Order Number', 'Supplier', 'Total Amount', 'Order Date']
 
 // Computed
 const itemsToDisplay = computed(() => {
   const source = store.searchResults.length ? store.searchResults : items.value
   const start = (currentPage.value - 1) * pageSize.value
   return source.slice(start, start + pageSize.value)
-})
-
-const linkedPurchaseOrders = computed(() => {
-  const linkedPoNos = new Set(items.value.map((i) => i.po_no).filter(Boolean))
-  return purchaseOrders.value.filter((po) => linkedPoNos.has(po.po_no))
 })
 
 const newItem = { status: null }
@@ -68,7 +64,9 @@ async function fetchItems(page = 1) {
       *,
       condition:condition_id (
         condition_name
-      ),  action:status(action_id,action_name),department:dept_id(dept_name)
+      ),  action:status(action_id,action_name),
+      department:dept_id(dept_name),
+       individual_transaction:indiv_txn_id(recipient_name)
     `,
       { count: 'exact' },
     )
@@ -79,6 +77,7 @@ async function fetchItems(page = 1) {
     toast.error('Error fetching items:', error.message)
     return
   }
+  console.log('Item data:', data)
 
   items.value = await Promise.all(
     data.map(async (item) => {
@@ -94,10 +93,8 @@ async function fetchItems(page = 1) {
           condition_name: item.condition?.condition_name || 'N/A',
           status: item.action?.action_name || 'Issued',
           dept_id: item.department?.dept_id || item.dept_id || '',
-          dept_name:
-            item.department?.dept_name ||
-            this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
-            'N/A',
+          dept_name: item.department?.dept_name || 'N/A',
+          recipient_name: item.individual_transaction?.recipient_name || 'N/A',
         }
       } catch (e) {
         console.warn('QR generation failed for item', item, e)
@@ -107,20 +104,32 @@ async function fetchItems(page = 1) {
           condition_name: item.condition?.condition_name || 'N/A',
           status: item.action?.action_name || 'Issued',
           dept_id: item.department?.dept_id || item.dept_id || '',
-          dept_name:
-            item.department?.dept_name ||
-            this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
-            'N/A',
+          dept_name: item.department?.dept_name || 'N/A',
+          recipient_name: item.individual_transaction?.recipient_name || 'N/A',
         }
       }
     }),
   )
+  console.log(items.value[1].individual_transaction?.recipient_name)
 
   totalItems.value = count
   totalPages.value = Math.ceil(count / pageSize.value)
   currentPage.value = page
 }
 
+async function fetchRecipient() {
+  const { data, error } = await supabase
+    .from('individual_transaction')
+    .select('recipient_name')
+    .order('recipient_name')
+
+  if (error) {
+    console.error('Error fetching recipients: ' + error.message)
+    recipients.value = []
+  } else {
+    recipients.value = data || []
+  }
+}
 async function fetchDefaultStatus(newItem) {
   const { data, error } = await supabase
     .from('action')
@@ -275,6 +284,14 @@ async function confirmDelete() {
   itemToDelete.value = null
 }
 
+function openViewModal(item) {
+  viewItem.value = item
+}
+
+function closeViewModal() {
+  viewItem.value = null
+}
+
 function cancelDelete() {
   showConfirm.value = false
   itemToDelete.value = null
@@ -284,19 +301,19 @@ function cancelEdit() {
   editingItem.value = null
 }
 
-async function openStickerModal(item) {
-  try {
-    const idForQr = item.item_no ?? item.id ?? ''
-    const qrCode = await QRCode.toDataURL(String(idForQr), {
-      width: 150,
-      margin: 1,
-    })
-    stickerItem.value = { ...item, qrCode }
-  } catch (e) {
-    console.error('QR generation failed:', e)
-    stickerItem.value = { ...item, qrCode: '' }
-  }
-}
+// async function openStickerModal(item) {
+//   try {
+//     const idForQr = item.item_no ?? item.id ?? ''
+//     const qrCode = await QRCode.toDataURL(String(idForQr), {
+//       width: 150,
+//       margin: 1,
+//     })
+//     stickerItem.value = { ...item, qrCode }
+//   } catch (e) {
+//     console.error('QR generation failed:', e)
+//     stickerItem.value = { ...item, qrCode: '' }
+//   }
+// }
 
 function closeStickerModal() {
   stickerItem.value = null
@@ -313,7 +330,7 @@ onMounted(async () => {
   await fetchConditions()
   await fetchActions()
   await fetchDefaultStatus(newItem)
-
+  await fetchRecipient()
   await fetchItems()
 })
 </script>
@@ -321,12 +338,12 @@ onMounted(async () => {
 <template>
   <div class="items-page">
     <div class="page-header">
-      <h2>Item History</h2>
+      <h2>Item Details</h2>
       <router-link to="/reports">
         <button class="reports-btn"><i class="fas fa-file-alt"></i>Go to Reports</button>
       </router-link>
     </div>
-    <p>Individual Item Transaction History</p>
+    <p>Individual Item Information</p>
 
     <hr />
     <h3>Items</h3>
@@ -345,26 +362,32 @@ onMounted(async () => {
         <tbody>
           <tr v-for="item in itemsToDisplay" :key="item.item_no">
             <td>{{ item.name }}</td>
-            <td>{{ item.property_no }}</td>
+            <!-- <td>{{ item.property_no }}</td> -->
             <td>{{ item.location }}</td>
             <td>{{ item.dept_name }}</td>
             <td>{{ item.status_name }}</td>
-            <td>{{ item.serial_no }}</td>
-            <td>{{ item.model_brand }}</td>
-            <td>{{ item.date_acquired }}</td>
+            <!-- <td>{{ item.serial_no }}</td>
+            <td>{{ item.model_brand }}</td> -->
+            <!-- <td>{{ item.date_acquired }}</td> -->
             <td>{{ item.condition_name || 'N/A' }}</td>
             <td>
+              {{ item.recipient_name || 'N/A' }}
+            </td>
+            <td>
+              PO Number:
               <span v-if="item.po_no" class="po-badge">
-                Purchase Order Number: {{ item.po_no }}
+                {{ item.po_no }}
               </span>
               <span v-else class="no-po">N/A</span>
             </td>
-            <td>
-              <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
-            </td>
-            <td>
-              <button @click="editItem(item)">Edit</button>
-              <button @click="askDelete(item.item_no)">Delete</button>
+
+            <td class="actions">
+              <button class="icon-btn view-btn" @click="openViewModal(item)">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="icon-btn edit-btn" @click="editItem(item)">
+                <i class="fas fa-edit"></i>
+              </button>
             </td>
           </tr>
         </tbody>
@@ -381,30 +404,6 @@ onMounted(async () => {
       </button>
     </div>
     <br />
-
-    <h3>Purchase Orders (with items only)</h3>
-
-    <!-- Purchase Orders Table -->
-    <div class="table-wrapper">
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th v-for="header in poHeaders" :key="header" class="resizable">
-              {{ header }}
-              <div class="resizer" @mousedown="startResize($event)"></div>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="po in linkedPurchaseOrders" :key="po.po_no">
-            <td>{{ po.po_no }}</td>
-            <td>{{ po.supplier }}</td>
-            <td>₱{{ po.total_amount }}</td>
-            <td>{{ po.order_date }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
 
     <!-- Delete Confirmation -->
     <div v-if="showConfirm" class="modal-overlay">
@@ -512,5 +511,275 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+    <div v-if="viewItem" class="info-drawer">
+      <div class="drawer-header">
+        <h3>Item Information</h3>
+        <button class="close-btn" @click="closeViewModal">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+      </div>
+
+      <div class="drawer-body">
+        <div class="info-row">
+          <span class="label">Item Name:</span>
+          <span class="value">{{ viewItem.name }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Property No:</span>
+          <span class="value">{{ viewItem.property_no }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Location:</span>
+          <span class="value">{{ viewItem.location }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Department:</span>
+          <span class="value">{{ viewItem.dept_name }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Status:</span>
+          <span class="value status-tag">{{ viewItem.status_name }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Serial No:</span>
+          <span class="value">{{ viewItem.serial_no }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Model/Brand:</span>
+          <span class="value">{{ viewItem.model_brand }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Date Acquired:</span>
+          <span class="value">{{ viewItem.date_acquired }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Condition:</span>
+          <span class="value">{{ viewItem.condition_name || 'N/A' }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">Receiver:</span>
+          <span class="value">{{ viewItem.recipient_name || 'N/A' }}</span>
+        </div>
+
+        <div class="info-row">
+          <span class="label">PO No:</span>
+          <span class="value">{{ viewItem.po_no || 'N/A' }}</span>
+        </div>
+      </div>
+
+      <div class="drawer-footer">
+        <button class="edit-btn" @click="editItem(viewItem)">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+        <button class="delete-btn" @click="askDelete(viewItem.item_no)">
+          <ion-icon name="trash-outline"></ion-icon> Delete
+        </button>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+/* --- Info Drawer (Admin Panel Style) --- */
+.info-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 420px;
+  background: #ffffff;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease forwards;
+  z-index: 2000;
+  overflow: hidden;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.drawer-header h3 {
+  margin: 0;
+  color: #111827;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+.close-btn:hover {
+  color: #111827;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.label {
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.value {
+  color: #1f2937;
+  font-weight: 500;
+  text-align: left;
+  max-width: 60%;
+  overflow-wrap: break-word;
+}
+
+.drawer-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 10px;
+  background: #f9fafb;
+}
+
+.drawer-footer button {
+  flex: 1;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+.drawer-footer .edit-btn {
+  background: #2563eb;
+  color: white;
+}
+.drawer-footer .edit-btn:hover {
+  background: #1e40af;
+}
+
+.drawer-footer .delete-btn {
+  background: #ef4444;
+  color: white;
+}
+.drawer-footer .delete-btn:hover {
+  background: #b91c1c;
+}
+
+/* --- Action Buttons --- */
+.view-btn {
+  background: #0ea5e9;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  margin-right: 6px;
+}
+.view-btn:hover {
+  background: #0284c7;
+}
+
+/* --- Dim Overlay --- */
+.info-drawer::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: calc(100% - 420px);
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: -1;
+}
+
+/* --- RESPONSIVENESS --- */
+@media (max-width: 768px) {
+  .info-drawer {
+    width: 100%;
+    height: 100%;
+    top: auto;
+    bottom: 0;
+    animation: slideUp 0.3s ease forwards;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+  }
+
+  .info-drawer::before {
+    width: 100%;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .drawer-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .drawer-body {
+    padding: 1rem;
+  }
+
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .label {
+    margin-bottom: 0.3rem;
+  }
+
+  .value {
+    text-align: left;
+    max-width: 100%;
+  }
+
+  .drawer-footer {
+    flex-direction: column;
+  }
+
+  .drawer-footer button {
+    width: 100%;
+  }
+}
+</style>

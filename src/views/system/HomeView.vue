@@ -74,7 +74,6 @@
               <ion-icon name="qr-code-outline" />
               <h3>Tagged Items</h3>
               <p>{{ taggedItems }}</p>
-              <span>"Under Development"</span>
             </div>
 
             <div class="dashboard-card">
@@ -95,7 +94,6 @@
               <div class="chart-box">
                 <canvas id="pieChart"></canvas>
                 <p>Tagged vs Untagged</p>
-                <span>"Under Development"</span>
               </div>
               <div class="chart-box">
                 <canvas id="lineChart"></canvas>
@@ -429,7 +427,7 @@ async function fetchRecentTransactions() {
       id: t.txn_id,
       item_name: item?.name || 'Unknown Item',
       status: actionMap[t.action_id] || 'Pending',
-      user: userMap[t.user_id] || 'Unknown User',
+      user: userMap[t.user_id] || 'Staff',
       recipient: recipientMap[t.indiv_txn_id] || 'N/A',
       department: deptMap[t.dept_id] || 'N/A',
       date: t.date,
@@ -472,7 +470,16 @@ async function renderTransactionChart(transactions) {
         },
         scales: {
           x: { title: { display: true, text: 'Date' } },
-          y: { title: { display: true, text: 'Transactions' }, beginAtZero: true, precision: 0 },
+          y: {
+            title: { display: true, text: 'Transactions' },
+            beginAtZero: true,
+            ticks: {
+              precision: 0, // removes decimals
+              callback: function (value) {
+                return Number.isInteger(value) ? value : null // only show whole numbers
+              },
+            },
+          },
         },
       },
     })
@@ -516,7 +523,16 @@ async function renderTransactionChart(transactions) {
       },
       scales: {
         x: { title: { display: true, text: 'Date' } },
-        y: { title: { display: true, text: 'Transactions' }, beginAtZero: true, precision: 0 },
+        y: {
+          title: { display: true, text: 'Transactions' },
+          beginAtZero: true,
+          ticks: {
+            precision: 0, // removes decimals
+            callback: function (value) {
+              return Number.isInteger(value) ? value : null // only show whole numbers
+            },
+          },
+        },
       },
     },
   })
@@ -568,6 +584,20 @@ async function fetchDamagedItems() {
   damagedItems.value = count || 0
 }
 
+async function fetchTaggedItems() {
+  const { data, error } = await supabase.from('items').select('status')
+
+  if (error) {
+    console.error('Error fetching tagged items:', error.message)
+    taggedItems.value = 0
+    return
+  }
+
+  // Count items whose status is not "Default"
+  const taggedCount = data.filter((i) => i.status && i.status !== 5).length
+  taggedItems.value = taggedCount
+}
+
 function calculateSummary() {
   totalItems.value = itemsWithPO.value.length
   totalPOs.value = itemsWithPO.value.filter((i) => i.purchase_order).length
@@ -586,24 +616,47 @@ function goToItem(item) {
 }
 
 // Simple chart renderers
-// function initCharts() {
-//   new Chart(document.getElementById('barChart'), {
-//     type: 'bar',
-//     data: {
-//       labels: ['Good', 'Damaged', 'For Repair'],
-//       datasets: [
-//         { label: 'Items', data: [50, 10, 5], backgroundColor: ['#4caf50', '#ff9800', '#f44336'] },
-//       ],
-//     },
-//   })
+async function initCharts() {
+  const { data, error } = await supabase.from('items').select('status')
 
-//   new Chart(document.getElementById('pieChart'), {
-//     type: 'pie',
-//     data: {
-//       labels: ['Tagged', 'Untagged'],
-//       datasets: [{ data: [80, 20], backgroundColor: ['#2196f3', '#9e9e9e'] }],
-//     },
-//   })
+  if (error) {
+    console.error('Error fetching item statuses:', error)
+    return
+  }
+
+  // Count tagged and untagged based on status
+  const tagged = data.filter((i) => i.status && i.status !== 5).length
+  const untagged = data.filter((i) => i.status === 5).length
+
+  // Destroy previous chart if it exists
+  if (initCharts.pieChartInstance) {
+    initCharts.pieChartInstance.destroy()
+  }
+
+  // Create new chart
+  const ctx = document.getElementById('pieChart')
+  if (!ctx) return
+
+  initCharts.pieChartInstance = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: ['Tagged', 'Untagged'],
+      datasets: [
+        {
+          data: [tagged, untagged],
+          backgroundColor: ['#2196f3', '#9e9e9e'],
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true },
+        title: { display: true, text: 'Tagged vs Untagged Items' },
+      },
+    },
+  })
+}
 
 onMounted(async () => {
   const {
@@ -625,10 +678,11 @@ onMounted(async () => {
     await fetchRecentTransactions()
     await fetchTodayTransactions()
     await fetchDamagedItems()
+    await fetchTaggedItems()
     loading.value = false
     await fetchConditions()
     await renderTransactionChart(recentTransactions.value)
-    //initCharts()
+    initCharts()
   }
 })
 </script>
@@ -728,12 +782,23 @@ span {
   gap: 1.5rem;
 }
 .chart-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background: #fff;
   border-radius: 12px;
   padding: 1rem;
   text-align: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
+#pieChart {
+  max-width: 250px; /* Slightly bigger */
+  max-height: 250px;
+  display: block;
+  margin: 0 auto; /* Centers the chart nicely */
+}
+
 .system-overview {
   margin-top: 2rem;
 }

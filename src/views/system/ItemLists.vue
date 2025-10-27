@@ -116,8 +116,9 @@ onMounted(async () => {
               <td>{{ item.condition_name || 'N/A' }}</td>
               <td>{{ item.recipient_name || 'N/A' }}</td>
               <td>
+                PO Number:
                 <span v-if="item.po_no" class="po-badge">
-                  Purchase Order Number: {{ item.po_no }}
+                  {{ item.po_no }}
                 </span>
                 <span v-else class="no-po">N/A</span>
               </td>

@@ -15,7 +15,30 @@
           {{ action.action_name }}
         </option>
       </select>
+
+      <button class="filter-btn" @click="toggleSidebar">
+        <ion-icon name="funnel-outline"></ion-icon>
+      </button>
     </div>
+
+    <!-- Slide Sidebar for Date Filter -->
+    <div class="filter-sidebar" :class="{ open: showSidebar }">
+      <div class="sidebar-header">
+        <h3>Date Filter</h3>
+        <button class="close-btn" @click="toggleSidebar">&times;</button>
+      </div>
+      <div class="sidebar-body">
+        <label>Start Date</label>
+        <input type="date" v-model="startDate" />
+
+        <label>End Date</label>
+        <input type="date" v-model="endDate" />
+
+        <button class="apply-btn" @click="applyDateFilter">Apply</button>
+      </div>
+    </div>
+
+    <div v-if="showSidebar" class="overlay" @click="toggleSidebar"></div>
 
     <transition name="fade" mode="out-in">
       <!-- 🔹 Skeleton loader when loading -->
@@ -57,7 +80,7 @@
               <td>{{ txn.serial_no }}</td>
               <td>{{ txn.model_brand }}</td>
               <td>{{ txn.recipient_name }}</td>
-              <td>{{ txn.user_name || 'Admin' }}</td>
+              <td>{{ txn.user_name || 'Staff' }}</td>
               <td>{{ new Date(txn.date).toLocaleString() }}</td>
               <td>{{ txn.updated_at }}</td>
             </tr>
@@ -82,6 +105,9 @@ export default {
       actions: [],
       searchQuery: '',
       filterStatus: '',
+      startDate: '',
+      endDate: '',
+      showSidebar: false,
       loading: true,
     }
   },
@@ -99,8 +125,11 @@ export default {
 
         // Filter by status
         const matchesStatus = !this.filterStatus || txn.status_id === Number(this.filterStatus)
+        const txnDate = new Date(txn.date)
+        const afterStart = !this.startDate || txnDate >= new Date(this.startDate)
+        const beforeEnd = !this.endDate || txnDate <= new Date(this.endDate)
 
-        return matchesSearch && matchesStatus
+        return matchesSearch && matchesStatus && afterStart && beforeEnd
       })
     },
   },
@@ -120,7 +149,7 @@ export default {
           item:item_no(name, item_no, serial_no, model_brand, location, updated_at),
           department:dept_id(dept_id,dept_name),
           action:action_id(action_name),
-          users:user_id(full_name),
+          users:user_id(role),
           action_id,
           individual_transaction:indiv_txn_id(recipient_name)
         `,
@@ -146,13 +175,20 @@ export default {
         recipient_name: txn.individual_transaction?.recipient_name || 'N/A',
         status_name: txn.action?.action_name || 'Issued',
         status_id: txn.action_id,
-        user_name: txn.users?.full_name || 'Admin',
+        user_name: txn.users?.role || 'staff',
       }))
     },
 
     async fetchActions() {
       const { data, error } = await supabase.from('action').select('*')
       if (!error) this.actions = data
+    },
+    toggleSidebar() {
+      this.showSidebar = !this.showSidebar
+    },
+
+    applyDateFilter() {
+      this.toggleSidebar()
     },
   },
 }
@@ -237,14 +273,99 @@ h1 {
   padding: 8px 16px;
   border-radius: 6px;
   border: none;
-  background-color: #1f78d1;
-  color: white;
+  background-color: #d5d5d5;
+  color: rgb(0, 0, 0);
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .filters button:hover {
-  background-color: #155a9c;
+  background-color: #dfe0e1;
+}
+
+.filter-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-sidebar {
+  position: fixed;
+  top: 0;
+  right: -300px;
+  width: 280px;
+  height: 100%;
+  background: #fff;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  transition: right 0.3s ease;
+  padding: 20px;
+  z-index: 1000;
+}
+.filter-sidebar.open {
+  right: 0;
+}
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  color: #1b1b1b;
+}
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+.sidebar-body {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #1b1b1b;
+}
+.apply-btn {
+  margin-top: 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 900;
+}
+
+.filters .filter-btn ion-icon {
+  font-size: 18px; /* ✅ Makes the icon proportionate */
+  margin-right: 4px;
+  text-align: center;
+}
+
+.filter-sidebar input[type='date'] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #fafafa;
+  margin-bottom: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.filter-sidebar input[type='date']:focus {
+  border-color: #007bff;
+  outline: none;
+  background-color: #fff;
 }
 
 .table-wrapper {

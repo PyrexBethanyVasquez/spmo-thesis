@@ -74,9 +74,11 @@
                 <th>Location</th>
                 <th>Department</th>
                 <th>Status</th>
-                <th>Supplier</th>
+
                 <th>Serial Number</th>
                 <th>Model / Brand</th>
+                <th>Receiver</th>
+                <th>Supplier</th>
                 <th>Purchase Order</th>
                 <th>Total Amount</th>
                 <th>Date Acquired</th>
@@ -94,9 +96,13 @@
                 <td>{{ item.location }}</td>
                 <td>{{ item.department?.dept_name || '-' }}</td>
                 <td>{{ item.action?.action_name || '-' }}</td>
-                <td>{{ item.purchase_order?.supplier || '-' }}</td>
+
                 <td>{{ item.serial_no }}</td>
                 <td>{{ item.model_brand }}</td>
+                <td>
+                  {{ item.individual_transaction?.recipient_name || 'N/A' }}
+                </td>
+                <td>{{ item.purchase_order?.supplier || '-' }}</td>
 
                 <td>{{ item.purchase_order?.po_no || '-' }}</td>
                 <td>
@@ -130,39 +136,41 @@ export default {
       totalPOs: 0,
       totalSuppliers: 0,
       departments: [],
+      recipients: [],
       loading: true,
     }
   },
+
   async mounted() {
-    this.loading = true
-    await this.fetchItems()
-    await this.fetchDepartments()
-    this.calculateSummary()
-    this.loading = false
+    try {
+      this.loading = true
+      await Promise.all([this.fetchDepartments(), this.fetchRecipient(), this.fetchItems()])
+      this.calculateSummary()
+    } finally {
+      this.loading = false
+    }
   },
+
   methods: {
     async fetchItems() {
       const { data, error } = await supabase
         .from('items')
         .select(
           `
-            *,
-            purchase_order:purchase_order!inner(*),
-            action:status(action_id, action_name),
-            department:dept_id(dept_name)
-          `,
+      *,
+      purchase_order:purchase_order!inner(*),
+      action:status(action_id, action_name),
+      department:dept_id(dept_name),
+      individual_transaction:indiv_txn_id(recipient_name)
+    `,
         )
         .order('item_no', { ascending: true })
 
       if (error) return console.error(error)
       this.itemsWithPO = data
     },
-    calculateSummary() {
-      this.totalItems = this.itemsWithPO.length
-      this.totalPOs = this.itemsWithPO.filter((i) => i.purchase_order).length
-      const suppliers = this.itemsWithPO.map((i) => i.purchase_order?.supplier).filter(Boolean)
-      this.totalSuppliers = [...new Set(suppliers)].length
-    },
+
+    // Fetch all departments
 
     async fetchDepartments() {
       const { data, error } = await supabase.from('department').select('*').order('dept_name')
@@ -175,8 +183,34 @@ export default {
       this.departments = data
     },
 
+    async fetchRecipient() {
+      const { data, error } = await supabase
+        .from('individual_transaction')
+        .select('indiv_txn_id, recipient_name')
+        .order('recipient_name')
+
+      if (error) {
+        toast.error('Error fetching recipients: ' + error.message)
+        return
+      }
+
+      this.recipients = data
+    },
+
+    calculateSummary() {
+      this.totalItems = this.itemsWithPO.length
+      this.totalPOs = this.itemsWithPO.filter((i) => i.purchase_order).length
+
+      const suppliers = this.itemsWithPO.map((i) => i.purchase_order?.supplier).filter(Boolean)
+
+      this.totalSuppliers = [...new Set(suppliers)].length
+    },
+
     exportCSV() {
-      if (!this.itemsWithPO.length) return
+      if (!this.itemsWithPO.length) {
+        toast.info('No data available to export.')
+        return
+      }
 
       const headers = [
         'Item Name',
@@ -186,10 +220,11 @@ export default {
         'Status',
         'Serial No',
         'Model/Brand',
-        'Item Acquired',
-        'PO No',
+        'Recipient Name',
         'Supplier',
+        'PO No',
         'Total Amount',
+        'Item Acquired',
         'Order Date',
       ]
 
@@ -201,17 +236,18 @@ export default {
         item.action?.action_name || 'Unknown',
         item.serial_no,
         item.model_brand,
-        item.date_acquired,
-        item.purchase_order?.po_no || '',
+        item.individual_transaction?.recipient_name || 'N/A',
         item.purchase_order?.supplier || '',
+        item.purchase_order?.po_no || '',
         item.purchase_order?.total_amount || '',
+        item.date_acquired,
         item.purchase_order?.order_date || '',
       ])
 
       const csvContent = [headers, ...rows].map((e) => e.join(',')).join('\n')
-
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const link = document.createElement('a')
+
       link.href = URL.createObjectURL(blob)
       link.setAttribute('download', `SPMO_Report_${new Date().toISOString().slice(0, 10)}.csv`)
       document.body.appendChild(link)
