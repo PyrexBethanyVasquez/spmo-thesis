@@ -14,7 +14,9 @@ export const useItemStore = defineStore('items', {
           `
       *,
       condition:condition_id(condition_name),
-      action:status(action_name),department:dept_id(dept_name)
+      action:status(action_name),
+      department:dept_id(dept_name),
+      individual_transaction:indiv_txn_id(recipient_name)
     `,
         )
         .order('item_no', { ascending: true })
@@ -42,7 +44,9 @@ export const useItemStore = defineStore('items', {
           `
       *,
       condition:condition_id(condition_name),
-      action:status(action_name),department:dept_id(dept_name)
+      action:status(action_name),
+      department:dept_id(dept_name),
+      individual_transaction:indiv_txn_id(recipient_name)
     `,
         )
         .or(
@@ -61,6 +65,7 @@ export const useItemStore = defineStore('items', {
             item.department?.dept_name ||
             this.departments?.find((d) => d.dept_id === item.dept_id)?.dept_name ||
             'N/A',
+          recipient_name: item.individual_transaction?.recipient_name || 'N/A',
         }))
       }
     },
