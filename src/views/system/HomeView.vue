@@ -333,7 +333,6 @@ async function fetchItemsWithPO() {
     return sum + amount
   }, 0)
 
-  console.log('Total Purchase Order Amount:', totalAmount)
   totalPurchaseAmount.value = totalAmount
   calculateSummary()
 }
@@ -563,7 +562,6 @@ async function fetchTodayTransactions() {
     todayTransactions.value = 0
     return
   }
-  console.log('PH Date:', todayStr)
 
   todayTransactions.value = count || 0
 }

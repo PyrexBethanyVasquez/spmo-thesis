@@ -77,7 +77,6 @@ async function fetchItems(page = 1) {
     toast.error('Error fetching items:', error.message)
     return
   }
-  console.log('Item data:', data)
 
   items.value = await Promise.all(
     data.map(async (item) => {
@@ -124,7 +123,7 @@ async function fetchRecipient() {
     .order('recipient_name')
 
   if (error) {
-    console.error('Error fetching recipients: ' + error.message)
+    toast.error('Error fetching recipients: ' + error.message)
     recipients.value = []
   } else {
     recipients.value = data || []
@@ -138,7 +137,7 @@ async function fetchDefaultStatus(newItem) {
     .single()
 
   if (error) {
-    console.error('Error fetching default status:', error.message)
+    toast.error('Error fetching default status:', error.message)
   } else {
     newItem.status = data.action_id
   }
@@ -147,7 +146,7 @@ async function fetchDefaultStatus(newItem) {
 async function fetchActions() {
   const { data, error } = await supabase.from('action').select('*')
   if (error) {
-    console.error('Error fetching actions:', error.message)
+    toast.error('Error fetching actions:', error.message)
     actions.value = []
   } else {
     actions.value = data || []
@@ -160,7 +159,7 @@ async function fetchPurchaseOrders() {
     .select('*')
     .order('po_no', { ascending: true })
   if (error) {
-    console.error('Error fetching purchase orders:', error.message)
+    toast.error('Error fetching purchase orders:', error.message)
     purchaseOrders.value = []
   } else {
     purchaseOrders.value = data || []
