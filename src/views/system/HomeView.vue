@@ -344,7 +344,6 @@ async function fetchRecentTransactions() {
     .select('*')
     .order('date', { ascending: false })
     .limit(5)
-
   if (txnError) {
     console.error('Error fetching transactions:', txnError.message)
     recentTransactions.value = []
@@ -429,7 +428,7 @@ async function fetchRecentTransactions() {
       user: userMap[t.user_id] || 'Staff',
       recipient: recipientMap[t.indiv_txn_id] || 'N/A',
       department: deptMap[t.dept_id] || 'N/A',
-      date: t.date,
+      date: new Date(t.date).toLocaleDateString(),
     }
   })
 }
@@ -437,9 +436,19 @@ async function fetchRecentTransactions() {
 let lineChartInstance = null
 
 // Function to render the chart
-async function renderTransactionChart(transactions) {
+async function renderTransactionChart() {
   const ctx = document.getElementById('lineChart')
   if (!ctx) return
+
+  const { data: transactions, error } = await supabase
+    .from('transaction')
+    .select('date')
+    .order('date', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching transactions:', error)
+    return
+  }
 
   // Check if transactions exist
   if (!transactions || transactions.length === 0) {
@@ -538,7 +547,7 @@ async function renderTransactionChart(transactions) {
 }
 
 async function fetchTodayTransactions() {
-  // Force to Philippine Time (UTC+8)
+  // Philippine Time (UTC+8)
   const now = new Date()
   const utc = now.getTime() + now.getTimezoneOffset() * 60000
   const philippineNow = new Date(utc + 8 * 60 * 60000)

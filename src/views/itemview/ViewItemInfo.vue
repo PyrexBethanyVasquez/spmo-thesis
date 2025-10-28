@@ -109,7 +109,6 @@ async function fetchItems(page = 1) {
       }
     }),
   )
-  console.log(items.value[1].individual_transaction?.recipient_name)
 
   totalItems.value = count
   totalPages.value = Math.ceil(count / pageSize.value)
@@ -230,41 +229,41 @@ function editItem(item) {
   }
 }
 
-// async function updateItem() {
-//   if (!editingItem.value) return
+async function updateItem() {
+  if (!editingItem.value) return
 
-//   const itemData = {
-//     name: editingItem.value.name,
-//     property_no: editingItem.value.property_no,
-//     location: editingItem.value.location,
-//     status: editingItem.value.status, // keep action_id for DB
-//     serial_no: editingItem.value.serial_no,
-//     model_brand: editingItem.value.model_brand,
-//     date_acquired: editingItem.value.date_acquired,
-//     po_no: editingItem.value.po_no,
-//     condition_id: editingItem.value.condition_id,
-//     dept_id: editingItem.value.dept_id,
-//   }
+  const itemData = {
+    name: editingItem.value.name,
+    property_no: editingItem.value.property_no,
+    location: editingItem.value.location,
+    status: editingItem.value.status, // keep action_id for DB
+    serial_no: editingItem.value.serial_no,
+    model_brand: editingItem.value.model_brand,
+    date_acquired: editingItem.value.date_acquired,
+    po_no: editingItem.value.po_no,
+    condition_id: editingItem.value.condition_id,
+    dept_id: editingItem.value.dept_id,
+  }
 
-//   const { error } = await supabase
-//     .from('items')
-//     .update(itemData)
-//     .eq('item_no', editingItem.value.item_no)
+  const { error } = await supabase
+    .from('items')
+    .update(itemData)
+    .eq('item_no', editingItem.value.item_no)
 
-//   if (error) {
-//     console.error('Error updating item:', error.message)
-//     toast.error('Error updating item: ' + error.message)
-//     return
-//   }
+  if (error) {
+    console.error('Error updating item:', error.message)
+    toast.error('Error updating item: ' + error.message)
+    return
+  }
 
-//   toast.success('Item updated successfully!')
+  toast.success('Item updated successfully!')
 
-//   // Refresh the items list
-//   await fetchItems()
+  // Refresh the items list
+  await fetchItems()
 
-//   // Clear editing item
-//   editingItem.value = null
-// }
+  // Clear editing item
+  editingItem.value = null
+}
 
 function askDelete(itemId) {
   itemToDelete.value = itemId

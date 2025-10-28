@@ -62,7 +62,6 @@
               <th>Received by</th>
               <th>Created By</th>
               <th>Created_at</th>
-              <th>Updated_at</th>
             </tr>
           </thead>
           <tbody>
@@ -82,7 +81,6 @@
               <td>{{ txn.recipient_name }}</td>
               <td>{{ txn.user_name || 'Staff' }}</td>
               <td>{{ new Date(txn.date).toLocaleString() }}</td>
-              <td>{{ txn.updated_at }}</td>
             </tr>
             <tr v-if="filteredTransactions.length === 0">
               <td colspan="9" class="no-data">No transactions found.</td>
@@ -146,7 +144,7 @@ export default {
           `
           txn_id,
           date,
-          item:item_no(name, item_no, serial_no, model_brand, location, updated_at),
+          item:item_no(name, item_no, serial_no, model_brand, location),
           department:dept_id(dept_id,dept_name),
           action:action_id(action_name),
           users:user_id(role),
@@ -165,7 +163,7 @@ export default {
       this.transactions = data.map((txn) => ({
         id: txn.txn_id,
         date: txn.date,
-        updated_at: txn.item?.updated_at,
+
         item_no: txn.item?.item_no,
         item_name: txn.item?.name,
         serial_no: txn.item?.serial_no,
@@ -378,7 +376,6 @@ h1 {
 .transactions-table {
   width: 100%;
   border-collapse: collapse;
-  width: max-content;
 }
 
 .transactions-table th,
