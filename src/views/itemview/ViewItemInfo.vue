@@ -26,6 +26,7 @@ const stickerItem = ref(null)
 const departments = ref([])
 const viewItem = ref(null)
 const recipients = ref([])
+const transactionsMap = ref({})
 
 // Table headers
 const itemHeaders = [
@@ -191,6 +192,39 @@ async function fetchDepartments() {
   }
 }
 
+async function fetchTransactions() {
+  const { data, error } = await supabase
+    .from('transaction')
+    .select(
+      `
+      txn_id,
+      date,
+      item:item_no (item_no),
+      department:dept_id (dept_name),
+      action:action_id (action_name),
+      user:user_id (full_name),
+      individual_transaction:indiv_txn_id (recipient_name)
+    `,
+    )
+    .order('date', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching transactions:', error)
+    return
+  }
+
+  // ✅ Group transactions by item_no
+  const grouped = {}
+  data.forEach((txn) => {
+    const itemNo = txn.item?.item_no
+    if (!itemNo) return // skip if missing
+    if (!grouped[itemNo]) grouped[itemNo] = []
+    grouped[itemNo].push(txn)
+  })
+
+  transactionsMap.value = grouped
+}
+
 function startResize(e) {
   const th = e.target.parentElement
   const startX = e.pageX
@@ -213,12 +247,6 @@ function startResize(e) {
 
   document.addEventListener('mousemove', doDrag)
   document.addEventListener('mouseup', stopDrag)
-}
-
-// Pagination
-function goToPage(page) {
-  if (page < 1 || page > totalPages.value) return
-  fetchItems(page)
 }
 
 // Actions
@@ -330,6 +358,7 @@ onMounted(async () => {
   await fetchDefaultStatus(newItem)
   await fetchRecipient()
   await fetchItems()
+  await fetchTransactions()
 })
 </script>
 
@@ -358,50 +387,81 @@ onMounted(async () => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in itemsToDisplay" :key="item.item_no">
-            <td>{{ item.name }}</td>
-            <!-- <td>{{ item.property_no }}</td> -->
-            <td>{{ item.location }}</td>
-            <td>{{ item.dept_name }}</td>
-            <td>{{ item.status_name }}</td>
-            <!-- <td>{{ item.serial_no }}</td>
-            <td>{{ item.model_brand }}</td> -->
-            <!-- <td>{{ item.date_acquired }}</td> -->
-            <td>{{ item.condition_name || 'N/A' }}</td>
-            <td>
-              {{ item.recipient_name || 'N/A' }}
-            </td>
-            <td>
-              PO Number:
-              <span v-if="item.po_no" class="po-badge">
-                {{ item.po_no }}
-              </span>
-              <span v-else class="no-po">N/A</span>
-            </td>
+          <template v-for="item in itemsToDisplay" :key="item.item_no">
+            <tr>
+              <td>{{ item.name }}</td>
+              <!-- <td>{{ item.property_no }}</td> -->
+              <td>{{ item.location }}</td>
+              <td>{{ item.dept_name }}</td>
+              <td>{{ item.status_name }}</td>
+              <!-- <td>{{ item.serial_no }}</td>
+              <td>{{ item.model_brand }}</td> -->
+              <!-- <td>{{ item.date_acquired }}</td> -->
+              <td>{{ item.condition_name || 'N/A' }}</td>
+              <td>
+                {{ item.recipient_name || 'N/A' }}
+              </td>
+              <td>
+                PO Number:
+                <span v-if="item.po_no" class="po-badge">
+                  {{ item.po_no }}
+                </span>
+                <span v-else class="no-po">N/A</span>
+              </td>
 
-            <td class="actions">
-              <button class="icon-btn view-btn" @click="openViewModal(item)">
-                <i class="fas fa-eye"></i>
-              </button>
-              <button class="icon-btn edit-btn" @click="editItem(item)">
-                <i class="fas fa-edit"></i>
-              </button>
-            </td>
-          </tr>
+              <td class="actions">
+                <button class="icon-btn view-btn" @click="openViewModal(item)">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="icon-btn edit-btn" @click="editItem(item)">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </td>
+            </tr>
+
+            <tr v-if="transactionsMap[item.item_no]" :key="item.item_no + '-transactions'">
+              <td colspan="8">
+                <div class="transaction-details">
+                  <h3>Transaction Details</h3>
+                  <table class="transactions-table">
+                    <thead>
+                      <tr>
+                        <th>Transaction ID</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>Receiver</th>
+                        <th>User</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="txn in transactionsMap[item.item_no]"
+                        :key="txn.txn_id"
+                        class="transaction-row"
+                      >
+                        <td>{{ txn.txn_id }}</td>
+                        <td>{{ txn.department?.dept_name || 'N/A' }}</td>
+                        <td>{{ txn.action?.action_name || 'N/A' }}</td>
+                        <td>{{ txn.individual_transaction?.recipient_name || 'N/A' }}</td>
+                        <td>{{ txn.user?.full_name || 'N/A' }}</td>
+                        <td>{{ new Date(txn.date).toLocaleString() }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+
+            <tr v-else :key="item.item_no + '-no-transactions'">
+              <td colspan="8" class="no-transactions">
+                No transactions found for {{ item.item_no }}
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
     </div>
-
-    <div class="pagination">
-      <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">Previous</button>
-
-      <span>Page {{ currentPage }} of {{ totalPages }}</span>
-
-      <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">
-        Next
-      </button>
-    </div>
-    <br />
 
     <!-- Delete Confirmation -->
     <div v-if="showConfirm" class="modal-overlay">
@@ -779,5 +839,50 @@ onMounted(async () => {
   .drawer-footer button {
     width: 100%;
   }
+}
+
+.transaction-details {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 10px;
+  margin-top: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.transaction-details h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #333;
+
+  padding-left: 10px;
+  letter-spacing: 0.5px;
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.transactions-table th,
+.transactions-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid #ddd; /* Only horizontal lines */
+}
+
+.transactions-table th {
+  background-color: #f0f4f8;
+  font-weight: 600;
+  color: #444;
+}
+
+.transactions-table tr:hover {
+  background-color: #f9fbfd;
+  transition: background-color 0.2s;
 }
 </style>
