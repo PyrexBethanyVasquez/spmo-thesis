@@ -194,6 +194,8 @@ onMounted(async () => {
     <div v-if="editingItem" class="modal">
       <div class="modal-content">
         <h3>Edit Item</h3>
+        <hr />
+        <br />
         <label>Item Name</label>
         <input v-model="editingItem.name" placeholder="Item Name" required />
         <label>Property No</label>

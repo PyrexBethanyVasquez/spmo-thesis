@@ -327,13 +327,15 @@ select option[disabled] {
   z-index: 1000;
   backdrop-filter: blur(2px);
 }
-.modal-content {
+.modal .modal-content {
   background: #fff;
   padding: 1.5em;
   border-radius: 0.75em;
-  max-width: 600px; /* wider to fit 3 columns */
-  width: 90%;
+  max-width: 650px; /* wider to fit 3 columns */
+  width: 100%;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  justify-content: flex-start;
+  text-align: start;
 }
 
 .modal-grid {

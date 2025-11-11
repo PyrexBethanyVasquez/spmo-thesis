@@ -297,6 +297,9 @@
       <div class="modal-content">
         <h3>Edit Item</h3>
 
+        <hr />
+        <br />
+
         <div class="modal-grid">
           <div>
             <label>Item Name</label>
@@ -467,7 +470,7 @@ const {
   cancelEdit,
   editItem,
   confirmDelete,
-
+  printSticker,
   openStickerModal,
   closeStickerModal,
   fetchItems,
