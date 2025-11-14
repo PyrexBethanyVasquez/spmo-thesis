@@ -415,17 +415,55 @@ export function useItemInventory() {
   async function confirmDelete() {
     if (!itemToDelete.value) return
 
-    const { error } = await supabase.from('items').delete().eq('item_no', itemToDelete.value)
+    try {
+      // Get the item data before deletion (for logging)
+      const { data: itemData, error: fetchError } = await supabase
+        .from('items')
+        .select('*')
+        .eq('item_no', itemToDelete.value)
+        .single()
 
-    if (error) {
-      toast.error('Error deleting item: ' + error.message)
-    } else {
+      if (fetchError) throw fetchError
+      if (!itemData) throw new Error('Item not found')
+
+      // Insert a transaction log
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      const logPayload = {
+        item_no: itemData.item_no,
+        dept_id: itemData.dept_id,
+        activity: 'delete',
+        user_id: user?.id || null,
+        date: new Date().toISOString(),
+        action_id: itemData.status || null,
+        indiv_txn_id: itemData.indiv_txn_id || null,
+      }
+
+      const { error: logError, data: logData } = await supabase
+        .from('transaction')
+        .insert([logPayload])
+        .select()
+      if (logError) throw logError
+      console.log('Transaction logged:', logData)
+
+      //  Hard delete the item
+      const { error: deleteError } = await supabase
+        .from('items')
+        .delete()
+        .eq('item_no', itemToDelete.value)
+      if (deleteError) throw deleteError
+
+      toast.success('Item deleted and logged successfully!')
       await fetchItems()
-      toast.success('Item deleted.')
+    } catch (err) {
+      console.error('Error deleting item:', err)
+      toast.error('Failed to delete item.')
+    } finally {
+      showConfirm.value = false
+      itemToDelete.value = null
     }
-
-    showConfirm.value = false
-    itemToDelete.value = null
   }
 
   // --- Utilities ---
