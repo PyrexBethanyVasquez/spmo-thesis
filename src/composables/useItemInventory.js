@@ -455,7 +455,7 @@ export function useItemInventory() {
         .eq('item_no', itemToDelete.value)
       if (deleteError) throw deleteError
 
-      toast.success('Item deleted and logged successfully!')
+      toast.success('Item deleted successfully!')
       await fetchItems()
     } catch (err) {
       console.error('Error deleting item:', err)
