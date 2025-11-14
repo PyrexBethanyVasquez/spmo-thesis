@@ -8,9 +8,6 @@
             <ion-icon name="return-down-back-outline"></ion-icon> Back to Items
           </button>
         </router-link>
-        <button class="export-btn" @click="exportCSV">
-          <ion-icon name="download-outline"></ion-icon> Export CSV
-        </button>
       </div>
     </div>
 
@@ -43,6 +40,23 @@
           </div>
         </div>
       </transition>
+
+      <!-- Recipient Filter -->
+      <div class="filter-box">
+        <label>Export Reports For:</label>
+        <select v-model="selectedRecipient" @change="fetchItems">
+          <option value="">All</option>
+          <option v-for="r in recipients" :key="r.indiv_txn_id" :value="r.indiv_txn_id">
+            {{ r.recipient_name }}
+          </option>
+        </select>
+        <button class="export-btn" @click="exportCSV">
+          <ion-icon name="download-outline"></ion-icon> Export CSV
+        </button>
+      </div>
+
+      <hr />
+      <br />
 
       <!-- ✅ Table Section -->
       <transition name="fade" mode="out-in">
@@ -137,6 +151,7 @@ export default {
       totalSuppliers: 0,
       departments: [],
       recipients: [],
+      selectedRecipient: '',
       loading: true,
     }
   },
@@ -153,7 +168,7 @@ export default {
 
   methods: {
     async fetchItems() {
-      const { data, error } = await supabase
+      let query = supabase
         .from('items')
         .select(
           `
@@ -165,6 +180,13 @@ export default {
     `,
         )
         .order('item_no', { ascending: true })
+
+      // Apply filter if selected
+      if (this.selectedRecipient) {
+        query = query.eq('indiv_txn_id', this.selectedRecipient)
+      }
+
+      const { data, error } = await query
 
       if (error) return console.error(error)
       this.itemsWithPO = data
@@ -208,9 +230,13 @@ export default {
 
     exportCSV() {
       if (!this.itemsWithPO.length) {
-        toast.info('No data available to export.')
+        toast.info('No records found for this recipient.')
         return
       }
+
+      const selectedName =
+        this.recipients.find((r) => r.indiv_txn_id === this.selectedRecipient)?.recipient_name ||
+        'All_Recipients'
 
       const headers = [
         'Item Name',
@@ -249,7 +275,10 @@ export default {
       const link = document.createElement('a')
 
       link.href = URL.createObjectURL(blob)
-      link.setAttribute('download', `SPMO_Report_${new Date().toISOString().slice(0, 10)}.csv`)
+      link.setAttribute(
+        'download',
+        `SPMO_Report_${selectedName}_${new Date().toISOString().slice(0, 10)}.csv`,
+      )
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -522,5 +551,39 @@ p {
   .reports-table {
     min-width: 650px;
   }
+}
+
+/* Filter Box Style */
+.filter-box {
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-box label {
+  font-weight: 600;
+  font-size: 15px;
+  color: #333;
+}
+
+.filter-box select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+}
+
+.filter-box select:hover {
+  border-color: #999;
+}
+
+.filter-box select:focus {
+  outline: none;
+  border-color: #495aff;
+  box-shadow: 0 0 4px rgba(73, 90, 255, 0.4);
 }
 </style>
