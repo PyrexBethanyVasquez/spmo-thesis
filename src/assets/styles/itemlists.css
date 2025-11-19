@@ -345,6 +345,29 @@
   }
 }
 
+.search-box {
+  position: relative;
+  flex: 1; /* take remaining space */
+}
+
+.search-box input {
+  width: 100%;
+  padding: 8px 12px 8px 36px; /* left padding for the icon */
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+.search-box .search-icon {
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  transform: translateY(-50%);
+  color: #999;
+  font-size: 18px;
+  pointer-events: none; /* icon doesn’t block clicks */
+}
+
 /* Column Resizer */
 .resizable {
   position: relative;

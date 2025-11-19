@@ -54,12 +54,14 @@ onMounted(async () => {
     <p>View Items and Purchase Orders</p>
 
     <div class="filters">
-      <ion-icon name="search-outline" />
-      <input
-        v-model.number="searchQuery"
-        placeholder="Search by name, property no, or model..."
-        @input="fetchItems(1)"
-      />
+      <div class="search-box">
+        <ion-icon name="search-outline" class="search-icon" />
+        <input
+          v-model.number="searchQuery"
+          placeholder="Search by name, property no, or model..."
+          @input="fetchItems(1)"
+        />
+      </div>
 
       <select v-model.number="selectedDepartment">
         <option value="">All Departments</option>

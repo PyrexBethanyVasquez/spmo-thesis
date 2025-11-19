@@ -183,6 +183,7 @@ export function useItems() {
         indiv_txn_id: editingItem.value.indiv_txn_id,
         user_id: userId,
         date: new Date().toISOString(),
+        po_no: itemData.po_no,
       }
 
       const { error: txnError } = await supabase.from('transaction').insert(transactionPayload)
