@@ -824,15 +824,19 @@ span {
 }
 .recent-transactions {
   margin-top: 2rem;
+  overflow-x: auto; /* enable horizontal scrolling on small screens */
+  -webkit-overflow-scrolling: touch; /* smooth scrolling for mobile */
 }
 .recent-transactions table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 600px;
 }
 .recent-transactions th,
 .recent-transactions td {
   border: 1px solid #ddd;
   padding: 8px;
+  white-space: nowrap;
 }
 .recent-transactions th {
   background-color: #f3f3f3;
