@@ -3,24 +3,24 @@
     <h1>Transactions</h1>
 
     <!-- Filters -->
-    <div class="filters">
-      <input
-        type="text"
-        v-model="searchQuery"
-        placeholder="Search by item, department, or user..."
-      />
-      <select v-model="filterStatus">
+    <!-- Filters Toolbar -->
+    <div class="filters-toolbar">
+      <div class="search-box">
+        <ion-icon name="search-outline"></ion-icon>
+        <input type="text" v-model="searchQuery" placeholder="Search transactions..." />
+      </div>
+
+      <select v-model="filterStatus" class="status-filter">
         <option value="">All Statuses</option>
         <option v-for="action in actions" :key="action.action_id" :value="action.action_id">
           {{ action.action_name }}
         </option>
       </select>
 
-      <button class="filter-btn" @click="toggleSidebar">
-        <ion-icon name="funnel-outline"></ion-icon>
+      <button class="date-btn" @click="toggleSidebar">
+        <ion-icon name="calendar-outline"></ion-icon> Filter by Date
       </button>
     </div>
-
     <!-- Slide Sidebar for Date Filter -->
     <div class="filter-sidebar" :class="{ open: showSidebar }">
       <div class="sidebar-header">
@@ -59,9 +59,11 @@
               <th>Location</th>
               <th>Serial Number</th>
               <th>Brand</th>
+
               <th>Received by</th>
               <th>Created By</th>
               <th>Created_at</th>
+              <th>Purchase Order</th>
             </tr>
           </thead>
           <tbody>
@@ -78,9 +80,51 @@
               <td>{{ txn.location }}</td>
               <td>{{ txn.serial_no }}</td>
               <td>{{ txn.model_brand }}</td>
+
               <td>{{ txn.recipient_name }}</td>
               <td>{{ txn.user_name || 'Staff' }}</td>
               <td>{{ new Date(txn.date).toLocaleString() }}</td>
+
+              <td>
+                <button v-if="txn.po_no" class="po-btn" @click="openPOModal(txn)">
+                  View Details
+                </button>
+                <span v-else>-</span>
+              </td>
+
+              <!-- PO Overlay Modal -->
+              <transition name="modal-fade">
+                <div v-if="showPOModal" class="overlay" @click.self="closePOModal">
+                  <div class="overlay-content">
+                    <div class="modal-header">
+                      <h2>Purchase Order Details</h2>
+                      <button class="close-icon" @click="closePOModal">
+                        <ion-icon name="close-circle-outline" size="large"></ion-icon>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="modal-row">
+                        <span class="label">PO Number:</span>
+                        <span class="value">{{ selectedPO?.po_no }}</span>
+                      </div>
+                      <div class="modal-row">
+                        <span class="label">Supplier:</span>
+                        <span class="value">{{ selectedPO?.supplier }}</span>
+                      </div>
+                      <div class="modal-row">
+                        <span class="label">Total Amount:</span>
+                        <span class="value">
+                          {{ selectedPO?.total_amount ? +selectedPO.total_amount : '-' }}
+                        </span>
+                      </div>
+                      <div class="modal-row">
+                        <span class="label">Order Date:</span>
+                        <span class="value">{{ selectedPO?.order_date || '-' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </transition>
             </tr>
             <tr v-if="filteredTransactions.length === 0">
               <td colspan="9" class="no-data">No transactions found.</td>
@@ -107,6 +151,8 @@ export default {
       endDate: '',
       showSidebar: false,
       loading: true,
+      showPOModal: false,
+      selectedPO: null,
     }
   },
   computed: {
@@ -145,6 +191,13 @@ export default {
           txn_id,
           date,
           item:item_no(name, item_no, serial_no, model_brand, location),
+          purchase_order:po_no (
+            po_no,
+            supplier,
+            total_amount,
+            order_date
+          ),
+
           department:dept_id(dept_id,dept_name),
           action:action_id(action_name),
           users:user_id(role),
@@ -163,7 +216,6 @@ export default {
       this.transactions = data.map((txn) => ({
         id: txn.txn_id,
         date: txn.date,
-
         item_no: txn.item?.item_no,
         item_name: txn.item?.name,
         serial_no: txn.item?.serial_no,
@@ -174,6 +226,10 @@ export default {
         status_name: txn.action?.action_name || 'Issued',
         status_id: txn.action_id,
         user_name: txn.users?.role || 'staff',
+        po_no: txn.purchase_order?.po_no || '-',
+        supplier: txn.purchase_order?.supplier || '-',
+        total_amount: txn.purchase_order?.total_amount || null,
+        order_date: txn.purchase_order?.order_date || null,
       }))
     },
 
@@ -187,6 +243,14 @@ export default {
 
     applyDateFilter() {
       this.toggleSidebar()
+    },
+    openPOModal(txn) {
+      this.selectedPO = txn
+      this.showPOModal = true
+    },
+    closePOModal() {
+      this.showPOModal = false
+      this.selectedPO = null
     },
   },
 }
@@ -383,13 +447,14 @@ h1 {
   border-bottom: 1px solid #ddd; /* Only horizontal line */
   padding: 12px 8px;
   text-align: center;
+  white-space: nowrap;
 }
 
 .transactions-table th {
   background-color: #a7b982;
   color: #1b1b1b;
   font-weight: 600;
-  position: relative;
+  position: sticky;
   top: 0;
 }
 
@@ -457,5 +522,275 @@ h1 {
     font-size: 10px;
     padding: 1px 6px;
   }
+}
+
+/* Toolbar */
+.filters-toolbar {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Search Box */
+.search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.search-box ion-icon {
+  font-size: 18px;
+  color: #000000;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  width: 100%;
+  margin-left: 8px;
+}
+
+.status-filter {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.date-btn {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* Sidebar */
+.filter-sidebar {
+  position: fixed;
+  top: 0;
+  right: -320px;
+  width: 300px;
+  height: 100vh;
+  background: white;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  transition: 0.3s ease;
+  z-index: 100;
+}
+
+.filter-sidebar.open {
+  right: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-body label {
+  margin-top: 15px;
+  font-weight: bold;
+}
+
+.apply-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 10px;
+  background: #4f46e5;
+  color: white;
+  border-radius: 8px;
+  border: none;
+}
+
+/* Overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 50;
+}
+
+/* RESPONSIVE — TABLETS */
+@media (max-width: 768px) {
+  .filter-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .filter-box label {
+    font-size: 13px;
+  }
+
+  .filter-box select,
+  .filter-box input {
+    width: 100%;
+  }
+}
+
+/* RESPONSIVE — MOBILE */
+@media (max-width: 480px) {
+  .filter-box {
+    padding: 10px 12px;
+    border-radius: 6px;
+  }
+
+  .filter-box label {
+    font-size: 12px;
+  }
+
+  .filter-box select,
+  .filter-box input {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 13px;
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.048); /* semi-transparent black */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.overlay-content {
+  background: rgb(255, 254, 254); /* light transparent white */
+  padding: 20px 25px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 450px;
+  text-align: left;
+  backdrop-filter: blur(5px); /* glass effect */
+}
+
+.overlay-content h2 {
+  margin-bottom: 15px;
+  color: #000000;
+}
+
+.overlay-content p {
+  margin: 8px 0;
+  color: #000000;
+}
+
+.close-btn {
+  margin-top: 15px;
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.po-btn {
+  background: none;
+  border: none;
+  color: #1e1e1e;
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.po-btn:hover {
+  color: #ffcc00;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  font-size: 1.5rem;
+  color: #1f2937; /* slate-800 */
+}
+
+/* Close Icon */
+.close-icon {
+  position: absolute; /* float above modal content */
+  top: 12px; /* distance from top */
+  right: 12px; /* distance from right */
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af; /* gray-400 */
+  transition: color 0.2s ease;
+  font-size: 1.8rem; /* optional, bigger icon */
+  z-index: 20; /* ensure it stays above modal content */
+}
+.close-icon:hover {
+  color: #ef4444; /* red-500 */
+}
+
+/* Modal Body */
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  padding: 6px 0;
+}
+
+.modal-row .label {
+  font-weight: 200;
+  color: #374151; /* slate-700 */
+}
+
+.modal-row .value {
+  font-weight: 600;
+  color: #202121; /* slate-900 */
+}
+
+/* Transition */
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.modal-fade-enter-to,
+.modal-fade-leave-from {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Fade + Scale Transition */
+.fade-scale-enter-active,
+.fade-scale-leave-active {
+  transition: all 0.25s ease;
+}
+.fade-scale-enter-from,
+.fade-scale-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+.fade-scale-enter-to,
+.fade-scale-leave-from {
+  opacity: 1;
+  transform: scale(1);
 }
 </style>
