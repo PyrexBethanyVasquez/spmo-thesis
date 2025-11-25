@@ -19,6 +19,7 @@ import UserLists from '@/views/system/user/UserLists.vue'
 //import ForgotPassword from '@/views/auth/ForgotPassword.vue'
 import Transaction from '@/views/system/transactions/TransactionPage.vue'
 import ViewItemInfo from '@/views/itemview/ViewItemInfo.vue'
+import ActivityPage from '@/views/system/transactions/ActivityPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -86,6 +87,12 @@ const router = createRouter({
           path: 'item-transactions',
           name: 'Transactions',
           component: Transaction,
+          meta: { role: ['admin'] },
+        },
+        {
+          path: 'transactions-activity',
+          name: 'ActivityPage',
+          component: ActivityPage,
           meta: { role: ['admin'] },
         },
         {
