@@ -344,6 +344,7 @@ async function fetchRecentTransactions() {
     .select('*')
     .order('date', { ascending: false })
     .limit(5)
+
   if (txnError) {
     console.error('Error fetching transactions:', txnError.message)
     recentTransactions.value = []
@@ -355,14 +356,13 @@ async function fetchRecentTransactions() {
     return
   }
 
-  // 2️⃣ Prepare IDs for related tables and filter out invalid/null
+  // Extract IDs
   const itemNos = transactions.map((t) => t.item_no).filter(Boolean)
-  const userIds = transactions.map((t) => t.user_id).filter(Boolean)
   const deptIds = transactions.map((t) => t.dept_id).filter(Boolean)
   const actIds = transactions.map((t) => t.action_id).filter(Boolean)
   const recipID = transactions.map((t) => t.indiv_txn_id).filter(Boolean)
 
-  // 3️⃣ Fetch related items
+  // 2️⃣ Fetch items
   let items = []
   if (itemNos.length > 0) {
     const { data, error } = await supabase
@@ -373,14 +373,31 @@ async function fetchRecentTransactions() {
     items = data || []
   }
 
-  // 4️⃣ Fetch related users
+  // 3️⃣ Fetch users from your Deno endpoint instead of Supabase table
   let users = []
-  if (userIds.length > 0) {
-    const { data, error } = await supabase.from('users').select('id, full_name').in('id', userIds)
-    if (error) console.error('Error fetching users:', error.message)
-    users = data || []
+  try {
+    const tokenRes = await supabase.auth.getSession()
+    const session = tokenRes.data?.session
+
+    const res = await fetch('https://hogtogfgaayfcaunjmyv.supabase.co/functions/v1/get-users', {
+      headers: {
+        Authorization: `Bearer ${session?.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    const json = await res.json()
+
+    if (!json.error) {
+      users = json.users || []
+    } else {
+      console.error('User fetch error:', json.error)
+    }
+  } catch (err) {
+    console.error('Failed getting users from Deno endpoint:', err)
   }
 
+  // 4️⃣ Fetch recipient names
   let recipient = []
   if (recipID.length > 0) {
     const { data, error } = await supabase
@@ -391,7 +408,7 @@ async function fetchRecentTransactions() {
     recipient = data || []
   }
 
-  // 5️⃣ Fetch related departments
+  // 5️⃣ Fetch departments
   let departments = []
   if (deptIds.length > 0) {
     const { data, error } = await supabase
@@ -402,23 +419,24 @@ async function fetchRecentTransactions() {
     departments = data || []
   }
 
-  // Fetch actions (status names)
+  // 6️⃣ Fetch actions
   let actions = []
-  const { data, error } = await supabase
+  const { data: actData, error: actError } = await supabase
     .from('action')
     .select('action_id, action_name')
     .in('action_id', actIds)
-  if (error) console.error('Error fetching action:', error.message)
-  actions = data || []
 
-  // 6️⃣ Map related tables for easy lookup
+  if (actError) console.error('Error fetching actions:', actError.message)
+  actions = actData || []
+
+  // 7️⃣ Maps
   const itemMap = Object.fromEntries(items.map((i) => [i.item_no, i]))
-  const userMap = Object.fromEntries(users.map((u) => [u.id, u.full_name]))
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u.full_name])) // 🔥 Using Deno users endpoint
   const deptMap = Object.fromEntries(departments.map((d) => [d.dept_id, d.dept_name]))
   const actionMap = Object.fromEntries(actions.map((a) => [a.action_id, a.action_name]))
   const recipientMap = Object.fromEntries(recipient.map((r) => [r.indiv_txn_id, r.recipient_name]))
 
-  // 7️⃣ Flatten transactions for Vue
+  // 8️⃣ Build output
   recentTransactions.value = transactions.map((t) => {
     const item = itemMap[t.item_no]
     return {

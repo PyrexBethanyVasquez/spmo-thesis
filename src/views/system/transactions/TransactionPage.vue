@@ -1,6 +1,7 @@
 <template>
   <div class="transactions-page">
-    <h1>Transactions</h1>
+    <h1>Item Logs</h1>
+    <p>Access detailed logs of item actions and system events.</p>
 
     <!-- Filters -->
     <!-- Filters Toolbar -->
@@ -62,10 +63,8 @@
               <th>Brand</th>
 
               <th>Received by</th>
-              <th>Created By</th>
-              <th>Created_at</th>
-
               <th>Purchase Order</th>
+              <th>Created_at</th>
             </tr>
           </thead>
           <tbody>
@@ -93,15 +92,13 @@
               <td>{{ txn.model_brand }}</td>
 
               <td>{{ txn.recipient_name }}</td>
-              <td>{{ txn.user_name || 'Staff' }}</td>
-              <td>{{ new Date(txn.date).toLocaleString() }}</td>
-
               <td>
                 <button v-if="txn.po_no" class="po-btn" @click="openPOModal(txn)">
                   View Details
                 </button>
                 <span v-else>-</span>
               </td>
+              <td>{{ new Date(txn.date).toLocaleString() }}</td>
 
               <!-- PO Overlay Modal -->
               <transition name="modal-fade">
@@ -355,6 +352,10 @@ export default {
 
 h1 {
   color: #1b1b1b;
+  margin-bottom: 20px;
+}
+p {
+  color: #64748b;
   margin-bottom: 20px;
 }
 

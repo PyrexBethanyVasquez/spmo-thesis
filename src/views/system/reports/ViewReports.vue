@@ -360,6 +360,11 @@ export default {
   min-height: 100vh;
 }
 
+.reports-page p {
+  color: #64748b; /* slate-500 */
+  font-size: 0.95em;
+}
+
 /* Header Section */
 .page-header {
   display: flex;

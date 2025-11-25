@@ -71,7 +71,7 @@
               <li>
                 <RouterLink to="/item-transactions" active-class="active">
                   <ion-icon name="list-outline"></ion-icon>
-                  All Logs
+                  Item Logs
                 </RouterLink>
               </li>
               <li>

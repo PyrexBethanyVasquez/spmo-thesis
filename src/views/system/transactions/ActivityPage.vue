@@ -1,6 +1,7 @@
 <template>
   <div class="transactions-page">
-    <h1>Activity Log</h1>
+    <h1>Activity Logs</h1>
+    <p>View users activities</p>
 
     <!-- Filters Toolbar -->
     <div class="filters-toolbar">
@@ -249,6 +250,10 @@ export default {
   background: #f7f8fa;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
+}
+p {
+  color: #64748b;
+  margin-bottom: 20px;
 }
 
 h1 {
