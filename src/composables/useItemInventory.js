@@ -89,7 +89,7 @@ export function useItemInventory() {
   // --- Fetch Methods ---
   async function fetchItems() {
     let query = supabase
-      .from('items')
+      .from('active_items')
       .select(
         `
       *,
@@ -221,7 +221,9 @@ export function useItemInventory() {
     const transaction = {
       item_no: newItemId,
       dept_id: cleanItem.dept_id,
+      activity: 'create',
       action_id: cleanItem.status,
+      po_no: cleanItem.po_no,
       indiv_txn_id: cleanItem.indiv_txn_id,
       user_id: user?.id || null,
       date: new Date().toISOString(),
@@ -317,7 +319,6 @@ export function useItemInventory() {
 
   // --- Dropdown / Modal Handlers ---
   function handleConditionChange() {
-    console.log('PO changed:', newItem.value.po_no)
     if (newItem.value.condition_id === 'add-new') {
       showConditionForm.value = true
       newItem.value.condition_id = ''
@@ -379,10 +380,11 @@ export function useItemInventory() {
         item_no: editingItem.value.item_no,
         action_id: editingItem.value.status,
         dept_id: editingItem.value.dept_id,
+        activity: 'update',
         indiv_txn_id: editingItem.value.indiv_txn_id,
         user_id: user?.id || null,
         date: new Date().toISOString(),
-        po_no: itemData.po_no,
+        po_no: editingItem.value.po_no,
       }
 
       const { error: txnError } = await supabase.from('transaction').insert(transactionPayload)
@@ -417,51 +419,61 @@ export function useItemInventory() {
     if (!itemToDelete.value) return
 
     try {
-      // Get the item data before deletion (for logging)
+      // 1️⃣ Get the current user session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+
+      const userId = sessionData?.session?.user?.id
+      if (!userId) {
+        toast.error('User not logged in. Cannot delete item.')
+        return
+      }
+
+      // 2️⃣ Fetch the item to delete
       const { data: itemData, error: fetchError } = await supabase
         .from('items')
         .select('*')
         .eq('item_no', itemToDelete.value)
         .single()
-
       if (fetchError) throw fetchError
       if (!itemData) throw new Error('Item not found')
 
-      // Insert a transaction log
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
+      // 3️⃣ Prepare transaction log payload
       const logPayload = {
         item_no: itemData.item_no,
         dept_id: itemData.dept_id,
+        po_no: itemData.po_no || null,
         activity: 'delete',
-        user_id: user?.id || null,
+        user_id: userId, // Required for RLS policy
         date: new Date().toISOString(),
         action_id: itemData.status || null,
         indiv_txn_id: itemData.indiv_txn_id || null,
       }
 
-      const { error: logError, data: logData } = await supabase
+      // 4️⃣ Insert the transaction log BEFORE soft deleting
+      const { data: logData, error: logError } = await supabase
         .from('transaction')
         .insert([logPayload])
         .select()
       if (logError) throw logError
       console.log('Transaction logged:', logData)
 
-      //  Hard delete the item
-      const { error: deleteError } = await supabase
+      // 5️⃣ Soft delete the item by setting deleted_at
+      const { data: updatedItem, error: softDeleteError } = await supabase
         .from('items')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('item_no', itemToDelete.value)
-      if (deleteError) throw deleteError
+        .select()
+      if (softDeleteError) throw softDeleteError
+      console.log('Item soft deleted:', updatedItem)
 
-      toast.success('Item deleted successfully!')
+      toast.success('Item soft deleted and logged successfully!')
       await fetchItems()
     } catch (err) {
       console.error('Error deleting item:', err)
       toast.error('Failed to delete item.')
     } finally {
+      // Reset modal / state
       showConfirm.value = false
       itemToDelete.value = null
     }

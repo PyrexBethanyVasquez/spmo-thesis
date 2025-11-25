@@ -54,7 +54,7 @@ export function useItems() {
     const to = from + pageSize.value - 1
 
     let query = supabase
-      .from('items')
+      .from('active_items')
       .select(
         `
         *,
