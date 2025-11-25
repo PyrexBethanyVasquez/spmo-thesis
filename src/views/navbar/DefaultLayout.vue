@@ -58,12 +58,29 @@
                 Item Lists
               </RouterLink>
             </li>
-            <li>
-              <RouterLink to="/item-transactions" active-class="active">
-                <ion-icon name="swap-horizontal-outline"></ion-icon>
-                Transactions
-              </RouterLink>
+
+            <li @click="T_toggleDropdown">
+              <ion-icon name="swap-horizontal-outline"></ion-icon>
+              Transactions
+              <ion-icon
+                :name="t_dropdownOpen ? 'chevron-up-outline' : 'chevron-down-outline'"
+                class="chevron"
+              />
             </li>
+            <ul v-if="t_dropdownOpen" class="submenu">
+              <li>
+                <RouterLink to="/item-transactions" active-class="active">
+                  <ion-icon name="list-outline"></ion-icon>
+                  All Logs
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/transactions-activity" active-class="active">
+                  <ion-icon name="man-outline"></ion-icon>
+                  Activity Logs
+                </RouterLink>
+              </li>
+            </ul>
 
             <li @click="toggleDropdown">
               <ion-icon name="people-outline"></ion-icon>
@@ -116,6 +133,7 @@ const user = ref(null)
 const role = ref('user')
 const dropdownOpen = ref(false)
 const sidebarOpen = ref(false)
+const t_dropdownOpen = ref(false)
 const currentDateTime = ref('')
 
 // Clock update
@@ -157,6 +175,7 @@ onBeforeUnmount(() => clearInterval(clockInterval))
 const toggleMenu = () => (sidebarOpen.value = !sidebarOpen.value)
 const closeMenu = () => (sidebarOpen.value = false)
 const toggleDropdown = () => (dropdownOpen.value = !dropdownOpen.value)
+const T_toggleDropdown = () => (t_dropdownOpen.value = !t_dropdownOpen.value)
 
 const logout = async () => {
   await supabase.auth.signOut()

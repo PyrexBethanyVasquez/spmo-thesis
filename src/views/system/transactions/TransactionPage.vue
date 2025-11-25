@@ -51,6 +51,7 @@
         <table class="transactions-table">
           <thead>
             <tr>
+              <th>Activity</th>
               <th>Item No</th>
               <th>Item Name</th>
               <th>Department</th>
@@ -63,11 +64,21 @@
               <th>Received by</th>
               <th>Created By</th>
               <th>Created_at</th>
+
               <th>Purchase Order</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="txn in filteredTransactions" :key="txn.id">
+              <td>
+                <span :class="['status-label', txn.activity ? txn.activity.toLowerCase() : '']">
+                  {{
+                    txn.activity
+                      ? txn.activity.charAt(0).toUpperCase() + txn.activity.slice(1)
+                      : '-'
+                  }}
+                </span>
+              </td>
               <td>{{ txn.item_no }}</td>
               <td>{{ txn.item_name }}</td>
               <td>{{ txn.dept_name }}</td>
@@ -200,9 +211,10 @@ export default {
 
           department:dept_id(dept_id,dept_name),
           action:action_id(action_name),
-          users:user_id(role),
+          users:user_id(full_name),
           action_id,
-          individual_transaction:indiv_txn_id(recipient_name)
+          individual_transaction:indiv_txn_id(recipient_name),
+          activity
         `,
         )
         .order('date', { ascending: false })
@@ -225,11 +237,12 @@ export default {
         recipient_name: txn.individual_transaction?.recipient_name || 'N/A',
         status_name: txn.action?.action_name || 'Issued',
         status_id: txn.action_id,
-        user_name: txn.users?.role || 'staff',
+        user_name: txn.users?.full_name || 'staff',
         po_no: txn.purchase_order?.po_no || '-',
         supplier: txn.purchase_order?.supplier || '-',
         total_amount: txn.purchase_order?.total_amount || null,
         order_date: txn.purchase_order?.order_date || null,
+        activity: txn.activity || null,
       }))
     },
 
@@ -257,6 +270,36 @@ export default {
 </script>
 
 <style scoped>
+.status-label.delete {
+  background-color: #ffe6e6; /* light red */
+  color: #a00; /* dark red text */
+  font-weight: bold;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.status-label.update {
+  background-color: #fff4e6;
+  color: #b56700;
+  font-weight: bold;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.status-label.create {
+  background-color: #e6f7ff; /* light blue */
+  color: #0077b6; /* blue text */
+  font-weight: bold;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.status-label.unknown {
+  background-color: #e6f7ff; /* light blue */
+  color: #777777; /* blue text */
+  font-weight: bold;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
 /* --- Table Skeleton (Supabase-style) --- */
 /* --- Table Skeleton (Supabase-style stair effect) --- */
 .skeleton-table {

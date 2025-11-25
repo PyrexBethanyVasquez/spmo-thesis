@@ -133,6 +133,12 @@ async function login() {
       return
     }
 
+    await supabase.from('users').upsert({
+      id: user.id,
+      full_name: user.user_metadata?.full_name || 'Unknown',
+      email: user.email,
+    })
+
     if (rememberMe.value) {
       localStorage.setItem('rememberAdmin', 'true')
       localStorage.setItem('rememberEmail', email.value)
