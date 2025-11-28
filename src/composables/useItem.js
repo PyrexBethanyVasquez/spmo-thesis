@@ -75,7 +75,6 @@ export function useItems() {
     }
 
     const { data, error, count } = await query
-    console.log(data)
 
     if (error) {
       toast.error('Error fetching items: ' + error.message)

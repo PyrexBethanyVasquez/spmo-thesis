@@ -2,11 +2,7 @@
   <div class="admin-auth-wrapper">
     <div class="admin-auth-card">
       <!-- Logo -->
-      <img
-        src="https://www.gstatic.com/images/branding/product/1x/avatar_circle_blue_512dp.png"
-        alt="Logo"
-        class="admin-auth-logo"
-      />
+      <img :src="spmo" alt="SPMO Logo" class="admin-auth-logo" />
 
       <!-- Title -->
       <h1 class="admin-auth-title">Admin Access</h1>
@@ -79,6 +75,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../../clients/supabase.js'
+import spmo from '../../../public/Artboard 2.png'
 
 let email = ref('')
 let password = ref('')

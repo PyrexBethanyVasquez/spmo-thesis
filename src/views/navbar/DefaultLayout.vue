@@ -11,7 +11,13 @@
               <span :class="{ open: sidebarOpen }"></span>
               <span :class="{ open: sidebarOpen }"></span>
             </button>
-            <RouterLink to="/" class="logo">SPMO</RouterLink>
+            <RouterLink to="/" class="logo">
+              <img
+                src="C:\Users\Renyl\SPMO\spmo-project\public\SPMO_Logo1.png"
+                alt="SPMO Logo"
+                class="logo-img"
+              />
+            </RouterLink>
           </div>
           <div class="nav-right">
             <span class="datetime">{{ currentDateTime }}</span>
@@ -182,3 +188,27 @@ const logout = async () => {
   router.push('/')
 }
 </script>
+
+<style scoped>
+.logo-img {
+  height: 60px;
+  width: auto;
+  display: block;
+  margin: 0;
+  margin-left: -45px;
+}
+
+@media (max-width: 768px) {
+  .logo-img {
+    height: 50px;
+    margin-left: -10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-img {
+    height: 40px;
+    margin-left: -10px;
+  }
+}
+</style>
