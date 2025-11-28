@@ -12,11 +12,7 @@
               <span :class="{ open: sidebarOpen }"></span>
             </button>
             <RouterLink to="/" class="logo">
-              <img
-                src="C:\Users\Renyl\SPMO\spmo-project\public\SPMO_Logo1.png"
-                alt="SPMO Logo"
-                class="logo-img"
-              />
+              <img :src="spmo" alt="SPMO Logo" class="logo-img" />
             </RouterLink>
           </div>
           <div class="nav-right">
@@ -133,6 +129,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/clients/supabase.js'
+import spmo from '../../../public/SPMO_Logo1.png'
 
 const router = useRouter()
 const user = ref(null)
