@@ -7,6 +7,7 @@ const {
   filteredItems,
   actions,
   showConfirm,
+  showConfirmPO,
   editingItem,
   stickerItem,
   currentPage,
@@ -18,11 +19,15 @@ const {
   departments,
   selectedDepartment,
   selectedStatus,
+  editingPO,
 
   fetchItems,
   askDelete,
   confirmDelete,
   cancelDelete,
+  confirmDeletePO,
+  cancelDeletePO,
+  askDeletePO,
   editItem,
   cancelEdit,
   openStickerModal,
@@ -31,6 +36,9 @@ const {
   goToPage,
   startResize,
   updateItem,
+  editPO,
+  cancelEditPO,
+  saveEditPO,
 } = useItems()
 
 onMounted(async () => {
@@ -174,6 +182,10 @@ onMounted(async () => {
               <td>{{ po.supplier }}</td>
               <td>₱{{ po.total_amount }}</td>
               <td>{{ po.order_date }}</td>
+              <td>
+                <button @click="editPO(po)">Edit</button>
+                <button @click="askDeletePO(po.po_no)">Delete</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -188,6 +200,19 @@ onMounted(async () => {
         <div class="modal-actions">
           <button class="delete-btn" @click="confirmDelete">Yes, Delete</button>
           <button class="cancel-btn" @click="cancelDelete">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Purchase Order Delete Confirmation -->
+    <div v-if="showConfirmPO" class="modal-overlay">
+      <div class="modal-card">
+        <h3>Confirm Delete</h3>
+        <p>Are you sure you want to delete this Purchase Order?</p>
+
+        <div class="modal-actions">
+          <button class="delete-btn" @click="confirmDeletePO">Yes, Delete</button>
+          <button class="cancel-btn" @click="cancelDeletePO">Cancel</button>
         </div>
       </div>
     </div>
@@ -223,6 +248,32 @@ onMounted(async () => {
         <div style="margin-top: 12px; display: flex; justify-content: flex-end">
           <button @click="updateItem">Save</button>
           <button @click="cancelEdit">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Purchase Order Modal -->
+    <div v-if="editingPO" class="modal">
+      <div class="modal-content">
+        <h3>Edit Purchase Order</h3>
+        <hr />
+        <br />
+
+        <label>Purchase Order Number</label>
+        <input v-model="editingPO.po_no" disabled />
+
+        <label>Supplier</label>
+        <input v-model="editingPO.supplier" placeholder="Supplier" />
+
+        <label>Total Amount</label>
+        <input v-model.number="editingPO.total_amount" type="number" placeholder="Total Amount" />
+
+        <label>Order Date</label>
+        <input v-model="editingPO.order_date" type="date" />
+
+        <div style="margin-top: 12px; display: flex; justify-content: flex-end; gap: 8px">
+          <button @click="saveEditPO">Save</button>
+          <button @click="cancelEditPO">Cancel</button>
         </div>
       </div>
     </div>

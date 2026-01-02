@@ -24,6 +24,9 @@ export function useItems() {
   const searchQuery = ref('')
   const selectedDepartment = ref('')
   const selectedStatus = ref('')
+  const poToDelete = ref(null)
+  const showConfirmPO = ref(false)
+  const editingPO = ref(null)
 
   const itemHeaders = [
     'Item Name',
@@ -41,7 +44,7 @@ export function useItems() {
     'Actions',
   ]
 
-  const poHeaders = ['Purchase Order Number', 'Supplier', 'Total Amount', 'Order Date']
+  const poHeaders = ['Purchase Order Number', 'Supplier', 'Total Amount', 'Order Date', 'Actions']
 
   const linkedPurchaseOrders = computed(() => {
     const linkedPoNos = new Set(items.value.map((i) => i.po_no).filter(Boolean))
@@ -205,6 +208,39 @@ export function useItems() {
     editingItem.value = { ...item, status: item.action?.action_id || '' }
   }
 
+  // Open modal for editing PO
+  const editPO = (po) => {
+    // Clone the object so original table data is not mutated until saved
+    editingPO.value = { ...po }
+  }
+
+  // Cancel editing
+  const cancelEditPO = () => {
+    editingPO.value = null
+  }
+
+  // Save edited PO
+  const saveEditPO = async () => {
+    if (!editingPO.value) return
+
+    const { error } = await supabase
+      .from('purchase_order')
+      .update({
+        supplier: editingPO.value.supplier,
+        total_amount: editingPO.value.total_amount,
+        order_date: editingPO.value.order_date,
+      })
+      .eq('po_no', editingPO.value.po_no)
+
+    if (error) {
+      toast.error(error.message)
+    } else {
+      toast.success('Purchase order updated successfully')
+      await fetchPurchaseOrders() // refresh table
+      editingPO.value = null // close modal
+    }
+  }
+
   function goToPage(page) {
     if (page < 1 || page > totalPages.value) return
     fetchItems(page)
@@ -240,13 +276,68 @@ export function useItems() {
     showConfirm.value = true
   }
 
-  const confirmDelete = async () => {
+  async function confirmDelete() {
     if (!itemToDelete.value) return
-    const { error } = await supabase.from('items').delete().eq('item_no', itemToDelete.value)
-    if (error) toast.error(error.message)
-    else await fetchItems()
-    toast.success('Item deleted successfully')
-    showConfirm.value = false
+
+    try {
+      // 1️⃣ Get the current user session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+
+      const userId = sessionData?.session?.user?.id
+      if (!userId) {
+        toast.error('User not logged in. Cannot delete item.')
+        return
+      }
+
+      // 2️⃣ Fetch the item to delete
+      const { data: itemData, error: fetchError } = await supabase
+        .from('items')
+        .select('*')
+        .eq('item_no', itemToDelete.value)
+        .single()
+      if (fetchError) throw fetchError
+      if (!itemData) throw new Error('Item not found')
+
+      // 3️⃣ Prepare transaction log payload
+      const logPayload = {
+        item_no: itemData.item_no,
+        dept_id: itemData.dept_id,
+        po_no: itemData.po_no || null,
+        activity: 'delete',
+        user_id: userId, // Required for RLS policy
+        date: new Date().toISOString(),
+        action_id: itemData.status || null,
+        indiv_txn_id: itemData.indiv_txn_id || null,
+      }
+
+      // 4️⃣ Insert the transaction log BEFORE soft deleting
+      const { data: logData, error: logError } = await supabase
+        .from('transaction')
+        .insert([logPayload])
+        .select()
+      if (logError) throw logError
+      console.log('Transaction logged:', logData)
+
+      // 5️⃣ Soft delete the item by setting deleted_at
+      const { data: updatedItem, error: softDeleteError } = await supabase
+        .from('items')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('item_no', itemToDelete.value)
+        .select()
+      if (softDeleteError) throw softDeleteError
+      console.log('Item soft deleted:', updatedItem)
+
+      toast.success('Item soft deleted and logged successfully!')
+      await fetchItems()
+    } catch (err) {
+      console.error('Error deleting item:', err)
+      toast.error('Failed to delete item.')
+    } finally {
+      // Reset modal / state
+      showConfirm.value = false
+      itemToDelete.value = null
+    }
   }
 
   const cancelDelete = () => {
@@ -255,6 +346,32 @@ export function useItems() {
   }
 
   const cancelEdit = () => (editingItem.value = null)
+
+  const askDeletePO = (po_no) => {
+    poToDelete.value = po_no
+    showConfirmPO.value = true
+  }
+
+  const confirmDeletePO = async () => {
+    if (!poToDelete.value) return
+
+    const { error } = await supabase.from('purchase_order').delete().eq('po_no', poToDelete.value)
+
+    if (error) {
+      toast.error(error.message)
+    } else {
+      toast.success('Purchase order deleted successfully')
+      await fetchPurchaseOrders()
+    }
+
+    showConfirmPO.value = false
+    poToDelete.value = null
+  }
+
+  const cancelDeletePO = () => {
+    showConfirmPO.value = false
+    poToDelete.value = null
+  }
 
   const openStickerModal = (item) => (stickerItem.value = item)
   const closeStickerModal = () => (stickerItem.value = null)
@@ -295,6 +412,7 @@ export function useItems() {
     condition_names,
     departments,
     showConfirm,
+    showConfirmPO,
     itemToDelete,
     editingItem,
     stickerItem,
@@ -307,6 +425,10 @@ export function useItems() {
     searchQuery,
     selectedDepartment,
     selectedStatus,
+    editingPO,
+    editPO,
+    cancelEditPO,
+    saveEditPO,
     fetchItems,
     askDelete,
     confirmDelete,
@@ -319,5 +441,8 @@ export function useItems() {
     goToPage,
     updateItem,
     startResize,
+    askDeletePO,
+    confirmDeletePO,
+    cancelDeletePO,
   }
 }
