@@ -169,7 +169,7 @@ export default {
   methods: {
     async fetchItems() {
       let query = supabase
-        .from('items')
+        .from('active_items')
         .select(
           `
       *,
