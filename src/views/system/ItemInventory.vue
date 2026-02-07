@@ -53,7 +53,7 @@
       </div>
 
       <!-- Status Note -->
-      <div>
+      <!-- <div>
         <label for="status_note">Status Note (Optional)</label>
         <textarea
           id="status_note"
@@ -61,7 +61,7 @@
           placeholder="Add a note about this status..."
           rows="3"
         ></textarea>
-      </div>
+      </div> -->
 
       <hr class="section-divider" />
 
