@@ -152,6 +152,10 @@
   background-color: #029cd9;
 }
 
+.status-label.canceled {
+  background-color: #000000;
+}
+
 .status-label.default {
   background-color: #607d8b;
 }

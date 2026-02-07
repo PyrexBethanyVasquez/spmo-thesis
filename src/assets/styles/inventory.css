@@ -7,6 +7,10 @@
   max-width: 100%;
 }
 
+.uppercase-input {
+  text-transform: uppercase;
+}
+
 /* Headings */
 .items-page h2 {
   font-size: 1.6em;
@@ -1141,4 +1145,54 @@ select option[disabled] {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.notes-cell {
+  max-width: 250px;
+}
+
+.note-item {
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-left: 3px solid #4caf50;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.note-item p {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+}
+
+.note-item small {
+  color: #666;
+  font-size: 12px;
+}
+
+.no-notes {
+  color: #999;
+}
+
+.existing-note {
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.existing-note p {
+  margin: 0 0 5px 0;
+}
+
+.existing-note small {
+  color: #666;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  resize: vertical;
 }
