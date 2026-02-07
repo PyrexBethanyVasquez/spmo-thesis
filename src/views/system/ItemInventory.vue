@@ -52,6 +52,17 @@
         </select>
       </div>
 
+      <!-- Status Note -->
+      <div>
+        <label for="status_note">Status Note (Optional)</label>
+        <textarea
+          id="status_note"
+          v-model="newItem.status_note"
+          placeholder="Add a note about this status..."
+          rows="3"
+        ></textarea>
+      </div>
+
       <hr class="section-divider" />
 
       <!-- Bottom Dropdowns (Condition, PO, Department) -->
@@ -66,7 +77,7 @@
               @change="handleConditionChange"
               required
             >
-              <option disabled value="">-- Select Condition --</option>
+              <option disabled value="">Select Condition</option>
               <option
                 v-for="cond in conditions"
                 :key="cond.condition_id"
@@ -87,7 +98,7 @@
           <label for="department">Department</label>
           <div class="dept-inputs">
             <select id="department" v-model="newItem.dept_id" @change="handleDeptChange" required>
-              <option disabled value="">-- Select Department --</option>
+              <option disabled value="">Select Department</option>
               <option v-for="dept in departments" :key="dept.dept_id" :value="dept.dept_id">
                 {{ dept.dept_name }}
               </option>
@@ -102,10 +113,9 @@
           <label for="po_no">Purchase Order</label>
           <div class="po-inputs">
             <select id="po_no" v-model="newItem.po_no" @change="handlePOChange" required>
-              <option disabled value="">-- Select Purchase Order --</option>
+              <option disabled value="">Select Purchase Order</option>
               <option v-for="po in purchaseOrders" :key="po.po_no" :value="po.po_no">
-                {{ po.supplier }}
-                (₱{{ po.total_amount }})
+                [ {{ po.purchase_order_number }} ] → ₱{{ po.total_amount }}
               </option>
               <option disabled>──────────</option>
               <option value="add-new">+ Add New Purchase Order</option>
@@ -115,7 +125,7 @@
 
         <!-- Recipient Form -->
         <div class="recipient-section">
-          <label for="recipient">Recipient</label>
+          <label for="recipient">Accountable Officer</label>
           <div class="recipient-inputs">
             <select
               id="recipient"
@@ -123,12 +133,12 @@
               @change="handleRecipientChange"
               required
             >
-              <option disabled value="">-- Select Recipient --</option>
+              <option disabled value="">Select Accountable Officer</option>
               <option v-for="rec in receipient" :key="rec.indiv_txn_id" :value="rec.indiv_txn_id">
                 {{ rec.recipient_name }} ({{ rec.dept_position }})
               </option>
               <option disabled>──────────</option>
-              <option value="add-new">+ Add New Recipient</option>
+              <option value="add-new">+ Add New Accountable Officer</option>
             </select>
           </div>
         </div>
@@ -169,6 +179,7 @@
               <th>Location</th>
               <th>Department</th>
               <th>Status</th>
+
               <th>Serial No</th>
               <th>Model/Brand</th>
               <th>Date Acquired</th>
@@ -196,6 +207,7 @@
               <td>{{ item.location }}</td>
               <td>{{ item.dept_name }}</td>
               <td>{{ item.status_name }}</td>
+
               <td>{{ item.serial_no }}</td>
               <td>{{ item.model_brand }}</td>
               <td>{{ item.date_acquired }}</td>
@@ -203,6 +215,9 @@
                 <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
               </td>
               <td>
+                <!-- <button @click="viewNotes(item)" title="View Notes">
+                  <ion-icon name="eye-outline"></ion-icon>
+                </button> -->
                 <button @click="editItem(item)">Edit</button>
                 <button @click="askDelete(item.item_no)">Delete</button>
               </td>
@@ -215,13 +230,19 @@
     <!-- Recipient Modal -->
     <div v-if="showReceipientForm" class="modal">
       <div class="modal-content">
-        <h3>Add Recipient</h3>
-        <label>Recipient Name</label>
-        <input v-model="newReceipient.recipient_name" placeholder="Recipient Name" required />
-        <label>Recipient Position</label>
+        <h3>Add Accountable Officer</h3>
+        <hr />
+        <br />
+        <label>Accountable Officer Name</label>
+        <input
+          v-model="newReceipient.recipient_name"
+          placeholder="Enter Accountable Officer Name"
+          required
+        />
+        <label>Accountable Officer Position</label>
         <input
           v-model="newReceipient.dept_position"
-          placeholder="Recipient Position Name"
+          placeholder="Enter Accountable Officer Position"
           required
         />
         <label>Remarks</label>
@@ -237,6 +258,16 @@
     <div v-if="showPoForm" class="modal">
       <div class="modal-content">
         <h3>Add Purchase Order</h3>
+        <hr />
+        <br />
+        <label>Purchase Order Number</label>
+        <input
+          v-model="newPurchaseOrder.purchase_order_number"
+          placeholder="Purchase Order Number"
+          required
+          class="uppercase-input"
+        />
+
         <label>Supplier</label>
         <input v-model="newPurchaseOrder.supplier" placeholder="Supplier Name" required />
 
@@ -278,6 +309,34 @@
         <div class="modal-actions">
           <button @click="addDepartment">Save Department</button>
           <button @click="showDeptForm = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes View Modal -->
+    <div v-if="showNotesModal" class="modal">
+      <div class="modal-content">
+        <h3>Status Notes - {{ viewingNotesItem?.name }}</h3>
+        <hr />
+        <br />
+
+        <div v-if="viewingNotesItem?.action_notes && viewingNotesItem.action_notes.length > 0">
+          <div
+            v-for="note in viewingNotesItem.action_notes"
+            :key="note.note_id"
+            class="note-display"
+          >
+            <p class="note-text">{{ note.note_text }}</p>
+            <small class="note-date">{{ new Date(note.created_at).toLocaleString() }}</small>
+          </div>
+        </div>
+
+        <div v-else class="no-notes-message">
+          <p>No notes available for this item.</p>
+        </div>
+
+        <div class="modal-actions">
+          <button @click="showNotesModal = false">Close</button>
         </div>
       </div>
     </div>
@@ -360,7 +419,7 @@
             <select v-model="editingItem.po_no">
               <option disabled value="">-- Select Purchase Order --</option>
               <option v-for="po in purchaseOrders" :key="po.po_no" :value="po.po_no">
-                {{ po.po_no }} - {{ po.supplier }} (₱{{ po.total_amount }})
+                {{ po.purchase_order_number }} - (₱{{ po.total_amount }})
               </option>
             </select>
           </div>
@@ -460,6 +519,7 @@ const {
   addPurchaseOrder,
   addCondition,
   addDepartment,
+  // viewNotes,
   handleConditionChange,
   handlePOChange,
   handleDeptChange,

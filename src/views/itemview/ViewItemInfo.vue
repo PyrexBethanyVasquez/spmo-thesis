@@ -39,7 +39,7 @@ const itemHeaders = [
   // 'Model/Brand',
   // 'Date Acquired',
   'Item Condition',
-  'Receiver',
+  'Accountable Officer',
   'Purchase Order',
   'Actions',
 ]
@@ -59,7 +59,7 @@ async function fetchItems(page = 1) {
   const to = from + pageSize.value - 1
 
   const { data, error, count } = await supabase
-    .from('items')
+    .from('active_items')
     .select(
       `
       *,
@@ -67,7 +67,8 @@ async function fetchItems(page = 1) {
         condition_name
       ),  action:status(action_id,action_name),
       department:dept_id(dept_name),
-       individual_transaction:indiv_txn_id(recipient_name)
+       individual_transaction:indiv_txn_id(recipient_name),
+       action_notes(note_id, note_text, created_at, created_by)
     `,
       { count: 'exact' },
     )
@@ -274,7 +275,7 @@ async function updateItem() {
   }
 
   const { error } = await supabase
-    .from('items')
+    .from('active_items')
     .update(itemData)
     .eq('item_no', editingItem.value.item_no)
 
@@ -429,9 +430,10 @@ onMounted(async () => {
                         <th>Transaction ID</th>
                         <th>Department</th>
                         <th>Status</th>
-                        <th>Receiver</th>
+                        <th>Accountable Officer</th>
                         <th>User</th>
                         <th>Date</th>
+                        <th>Notes</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -446,6 +448,7 @@ onMounted(async () => {
                         <td>{{ txn.individual_transaction?.recipient_name || 'N/A' }}</td>
                         <td>{{ txn.user?.full_name || 'N/A' }}</td>
                         <td>{{ new Date(txn.date).toLocaleString() }}</td>
+                        <td>{{ txn.notes || 'N/A' }}</td>
                       </tr>
                     </tbody>
                   </table>

@@ -20,7 +20,9 @@ const {
   selectedDepartment,
   selectedStatus,
   editingPO,
+  statusName,
 
+  getPurchaseOrderNumber,
   fetchItems,
   askDelete,
   confirmDelete,
@@ -126,12 +128,12 @@ onMounted(async () => {
               <td>{{ item.condition_name || 'N/A' }}</td>
               <td>{{ item.recipient_name || 'N/A' }}</td>
               <td>
-                PO Number:
                 <span v-if="item.po_no" class="po-badge">
-                  {{ item.po_no }}
+                  {{ getPurchaseOrderNumber(item.po_no) || 'N/A' }}
                 </span>
                 <span v-else class="no-po">N/A</span>
               </td>
+
               <td>
                 <button class="print-btn" @click="openStickerModal(item)">View Sticker</button>
               </td>
@@ -178,7 +180,7 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="po in linkedPurchaseOrders" :key="po.po_no">
-              <td>{{ po.po_no }}</td>
+              <td>{{ po.purchase_order_number }}</td>
               <td>{{ po.supplier }}</td>
               <td>₱{{ po.total_amount }}</td>
               <td>{{ po.order_date }}</td>
@@ -231,13 +233,9 @@ onMounted(async () => {
         <input v-model="editingItem.location" placeholder="Location" />
         <div>
           <label>Status</label>
-          <select v-model="editingItem.status">
-            <option disabled value="">-- Select Status --</option>
-            <option v-for="act in actions" :key="act.action_id" :value="act.action_id">
-              {{ act.action_name }}
-            </option>
-          </select>
+          <input type="text" v-model="statusName" disabled class="status-input" />
         </div>
+
         <label>Serial No</label>
         <input v-model="editingItem.serial_no" placeholder="Serial No" />
         <label>Model/Brand</label>
@@ -260,7 +258,7 @@ onMounted(async () => {
         <br />
 
         <label>Purchase Order Number</label>
-        <input v-model="editingPO.po_no" disabled />
+        <input v-model="editingPO.purchase_order_number" disabled />
 
         <label>Supplier</label>
         <input v-model="editingPO.supplier" placeholder="Supplier" />

@@ -141,8 +141,8 @@
               <thead>
                 <tr>
                   <th>Item</th>
-                  <th>Added by</th>
-                  <th>Received by</th>
+                  <th>Item Added by</th>
+                  <th>Accountable Officer</th>
                   <th>Department</th>
                   <th>Status</th>
                   <th>Date</th>
@@ -247,7 +247,7 @@ async function fetchConditions() {
   const conditionCounts = []
   for (const condition of conditions) {
     const { count, error: countError } = await supabase
-      .from('items')
+      .from('active_items')
       .select('*', { count: 'exact', head: true })
       .eq('condition_id', condition.condition_id)
 
@@ -642,7 +642,7 @@ function goToItem(item) {
 
 // Simple chart renderers
 async function initCharts() {
-  const { data, error } = await supabase.from('items').select('status')
+  const { data, error } = await supabase.from('active_items').select('status')
 
   if (error) {
     console.error('Error fetching item statuses:', error)
