@@ -11,7 +11,7 @@ export function useItemInventory() {
   // --- Reactive State ---
   const items = ref([])
   const receipient = ref([])
-  const searchQuery = ref('ITM-25-')
+  const searchQuery = ref('ITM-26-')
   const purchaseOrders = ref([])
   const conditions = ref([])
   const actions = ref([])
@@ -37,6 +37,9 @@ export function useItemInventory() {
   const selectedDepartment = ref('')
   const selectedStatus = ref('')
 
+  //const showNotesModal = ref(false)
+  //const viewingNotesItem = ref(null)
+
   const newItem = ref({
     name: '',
     property_no: '',
@@ -58,6 +61,7 @@ export function useItemInventory() {
   })
 
   const newPurchaseOrder = ref({
+    purchase_order_number: '',
     supplier: '',
     total_amount: '',
     order_date: '',
@@ -95,7 +99,8 @@ export function useItemInventory() {
       *,
       action:status(action_id, action_name),
       department:dept_id(dept_id, dept_name),
-      individual_transaction:indiv_txn_id(recipient_name, dept_position, remarks)
+      individual_transaction:indiv_txn_id(recipient_name, dept_position, remarks),
+       action_notes(note_id, note_text, created_at, created_by)
       `,
         { count: 'exact' },
       )
@@ -137,6 +142,26 @@ export function useItemInventory() {
     )
 
     totalItems.value = count
+  }
+
+  async function addActionNote(itemNo, actionId, noteText) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    const { error } = await supabase.from('action_notes').insert({
+      item_no: itemNo,
+      action_id: actionId,
+      note_text: noteText,
+      created_by: user?.id,
+    })
+
+    if (error) {
+      toast.error('Failed to add note: ' + error.message)
+    } else {
+      toast.success('Note added successfully!')
+      await fetchItems()
+    }
   }
 
   async function fetchRecipient() {
@@ -232,6 +257,11 @@ export function useItemInventory() {
     const { error: txnError } = await supabase.from('transaction').insert([transaction])
     if (txnError) toast.error('Item added but failed to record transaction')
 
+    // Add action note if provided
+    if (newItem.value.status_note && newItem.value.status_note.trim()) {
+      await addActionNote(newItemId, cleanItem.status, newItem.value.status_note)
+    }
+
     await fetchItems()
     resetNewItem()
   }
@@ -276,7 +306,12 @@ export function useItemInventory() {
       newItem.value.po_no = data[0].po_no
     }
 
-    newPurchaseOrder.value = { supplier: '', total_amount: '', order_date: '' }
+    newPurchaseOrder.value = {
+      purchase_order_number: '',
+      supplier: '',
+      total_amount: '',
+      order_date: '',
+    }
     showPoForm.value = false
   }
 
@@ -370,6 +405,15 @@ export function useItemInventory() {
       if (updateError) {
         toast.error('Error updating item: ' + updateError.message)
         return
+      }
+
+      // Add new note if provided
+      if (editingItem.value.new_status_note && editingItem.value.new_status_note.trim()) {
+        await addActionNote(
+          editingItem.value.item_no,
+          editingItem.value.status,
+          editingItem.value.new_status_note,
+        )
       }
 
       const {
@@ -492,6 +536,8 @@ export function useItemInventory() {
       po_no: '',
       condition_id: '',
       dept_id: '',
+      indiv_txn_id: '',
+      status_note: '',
     }
   }
 
@@ -529,6 +575,11 @@ export function useItemInventory() {
   function printSticker() {
     window.print()
   }
+
+  // function viewNotes(item) {
+  //   viewingNotesItem.value = item
+  //   showNotesModal.value = true
+  // }
 
   // --- Lifecycle ---
   onMounted(async () => {
@@ -586,6 +637,8 @@ export function useItemInventory() {
     addPurchaseOrder,
     addCondition,
     addDepartment,
+    addActionNote,
+    //viewNotes,
     handleConditionChange,
     handlePOChange,
     handleDeptChange,

@@ -39,7 +39,7 @@ export function useItems() {
     'Date Acquired',
     'Item Condition',
     'Receiver',
-    'Purchase Order Linked',
+    'Purchase Order',
     'Item Sticker',
     'Actions',
   ]
@@ -51,7 +51,12 @@ export function useItems() {
     return purchaseOrders.value.filter((po) => linkedPoNos.has(po.po_no))
   })
 
-  // ✅ Fetch all items
+  const statusName = computed(() => {
+    const act = actions.value.find((a) => a.action_id === editingItem.value?.status)
+    return act ? act.action_name : 'N/A'
+  })
+
+  // Fetch all active items
   const fetchItems = async (page = 1) => {
     const from = (page - 1) * pageSize.value
     const to = from + pageSize.value - 1
@@ -144,13 +149,18 @@ export function useItems() {
     else purchaseOrders.value = data
   }
 
+  const getPurchaseOrderNumber = (poNo) => {
+    const po = purchaseOrders.value.find((p) => p.po_no === poNo)
+    return po ? po.purchase_order_number : null
+  }
+
   async function updateItem() {
     try {
       const itemData = {
         name: editingItem.value.name,
         property_no: editingItem.value.property_no,
         location: editingItem.value.location,
-        status: editingItem.value.status,
+        //status: editingItem.value.status,
         serial_no: editingItem.value.serial_no,
         model_brand: editingItem.value.model_brand,
         date_acquired: editingItem.value.date_acquired,
@@ -182,6 +192,7 @@ export function useItems() {
         item_no: editingItem.value.item_no,
         action_id: editingItem.value.status,
         dept_id: editingItem.value.dept_id,
+        activity: 'update',
         indiv_txn_id: editingItem.value.indiv_txn_id,
         user_id: userId,
         date: new Date().toISOString(),
@@ -270,7 +281,7 @@ export function useItems() {
     document.addEventListener('mouseup', stopDrag)
   }
 
-  // ✅ Delete functions
+  // Delete functions
   const askDelete = (id) => {
     itemToDelete.value = id
     showConfirm.value = true
@@ -280,7 +291,7 @@ export function useItems() {
     if (!itemToDelete.value) return
 
     try {
-      // 1️⃣ Get the current user session
+      // Get the current user session
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
       if (sessionError) throw sessionError
 
@@ -290,7 +301,7 @@ export function useItems() {
         return
       }
 
-      // 2️⃣ Fetch the item to delete
+      // Fetch the item to delete
       const { data: itemData, error: fetchError } = await supabase
         .from('items')
         .select('*')
@@ -299,7 +310,7 @@ export function useItems() {
       if (fetchError) throw fetchError
       if (!itemData) throw new Error('Item not found')
 
-      // 3️⃣ Prepare transaction log payload
+      // Prepare transaction log payload
       const logPayload = {
         item_no: itemData.item_no,
         dept_id: itemData.dept_id,
@@ -311,7 +322,7 @@ export function useItems() {
         indiv_txn_id: itemData.indiv_txn_id || null,
       }
 
-      // 4️⃣ Insert the transaction log BEFORE soft deleting
+      // Insert the transaction log BEFORE soft deleting
       const { data: logData, error: logError } = await supabase
         .from('transaction')
         .insert([logPayload])
@@ -319,7 +330,7 @@ export function useItems() {
       if (logError) throw logError
       console.log('Transaction logged:', logData)
 
-      // 5️⃣ Soft delete the item by setting deleted_at
+      //  Soft delete the item by setting deleted_at
       const { data: updatedItem, error: softDeleteError } = await supabase
         .from('items')
         .update({ deleted_at: new Date().toISOString() })
@@ -386,7 +397,7 @@ export function useItems() {
     await fetchRecipient()
   })
 
-  // Computed Filter (client-side)
+  // search filter
   const filteredItems = computed(() => {
     return items.value.filter((item) => {
       const matchesSearch =
@@ -426,6 +437,8 @@ export function useItems() {
     selectedDepartment,
     selectedStatus,
     editingPO,
+    statusName,
+    getPurchaseOrderNumber,
     editPO,
     cancelEditPO,
     saveEditPO,
