@@ -43,13 +43,14 @@
 
       <!-- Recipient Filter -->
       <div class="filter-box">
-        <label>Export Reports For:</label>
-        <select v-model="selectedRecipient" @change="fetchItems">
-          <option value="">All</option>
-          <option v-for="r in recipients" :key="r.indiv_txn_id" :value="r.indiv_txn_id">
-            {{ r.recipient_name }}
+        <label>Sort Amount:</label>
+        <select v-model="selectedAmountRange">
+          <option value="">All Amounts</option>
+          <option v-for="range in amountRanges" :key="range.value" :value="range.value">
+            {{ range.label }}
           </option>
         </select>
+
         <button class="export-btn" @click="exportCSV">
           <ion-icon name="download-outline"></ion-icon> Export CSV
         </button>
@@ -84,6 +85,7 @@
             <thead>
               <tr>
                 <th>Item Name</th>
+                <th>Purchase Order</th>
                 <th>Property No</th>
                 <th>Location</th>
                 <th>Department</th>
@@ -91,34 +93,29 @@
 
                 <th>Serial Number</th>
                 <th>Model / Brand</th>
-                <th>Receiver</th>
                 <th>Supplier</th>
-                <th>Purchase Order</th>
+                <th>Accountable Officer</th>
+
                 <th>Total Amount</th>
                 <th>Date Acquired</th>
                 <th>Order Date</th>
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="item in itemsWithPO"
-                :key="item.item_no"
-                :class="{ 'has-po': item.purchase_order }"
-              >
+              <tr v-for="item in filteredItems" :key="item.item_no">
                 <td>{{ item.name }}</td>
+                <td>{{ item.purchase_order?.purchase_order_number || '-' }}</td>
                 <td>{{ item.property_no }}</td>
                 <td>{{ item.location }}</td>
                 <td>{{ item.department?.dept_name || '-' }}</td>
                 <td>{{ item.action?.action_name || '-' }}</td>
-
                 <td>{{ item.serial_no }}</td>
                 <td>{{ item.model_brand }}</td>
+                <td>{{ item.purchase_order?.supplier || '-' }}</td>
                 <td>
                   {{ item.individual_transaction?.recipient_name || 'N/A' }}
                 </td>
-                <td>{{ item.purchase_order?.supplier || '-' }}</td>
 
-                <td>{{ item.purchase_order?.po_no || '-' }}</td>
                 <td>
                   {{
                     item.purchase_order?.total_amount ? '₱' + item.purchase_order.total_amount : '-'
@@ -126,6 +123,17 @@
                 </td>
                 <td>{{ item.date_acquired }}</td>
                 <td>{{ item.purchase_order?.order_date || '-' }}</td>
+              </tr>
+              <tr v-if="filteredItems.length > 0" class="nothing-follows-row">
+                <td colspan="13" style="text-align: center; font-style: italic; padding: 20px">
+                  *** NOTHING FOLLOWS ***
+                </td>
+              </tr>
+
+              <tr v-if="filteredItems.length === 0" class="no-data-row">
+                <td colspan="13" style="text-align: center; padding: 40px; color: #999">
+                  No Data Available
+                </td>
               </tr>
             </tbody>
           </table>
@@ -149,18 +157,44 @@ export default {
       totalItems: 0,
       totalPOs: 0,
       totalSuppliers: 0,
+      selectedAmountRange: '',
+      amountRanges: [],
       departments: [],
       recipients: [],
       selectedRecipient: '',
       loading: true,
     }
   },
+  computed: {
+    filteredItems() {
+      // fallback if items not loaded
+      if (!this.itemsWithPO || !this.itemsWithPO.length) return []
 
-  async mounted() {
+      // If no amount range selected, show all items
+      if (!this.selectedAmountRange) return this.itemsWithPO
+
+      // Parse min and max from selectedAmountRange
+      const [min, max] = this.selectedAmountRange.split('-').map(Number)
+
+      // If parsing failed, show all items
+      if (isNaN(min) || isNaN(max)) return this.itemsWithPO
+
+      // Filter items based on total_amount
+      return this.itemsWithPO.filter((item) => {
+        const amount = item.purchase_order?.total_amount || 0
+        return amount >= min && amount <= max
+      })
+    },
+  },
+
+  mounted() {
     try {
       this.loading = true
-      await Promise.all([this.fetchDepartments(), this.fetchRecipient(), this.fetchItems()])
-      this.calculateSummary()
+
+      Promise.all([this.fetchDepartments(), this.fetchRecipient(), this.fetchItems()]).then(
+        () => this.calculateSummary(),
+        this.generateAmountRanges(), // new
+      )
     } finally {
       this.loading = false
     }
@@ -168,7 +202,7 @@ export default {
 
   methods: {
     async fetchItems() {
-      let query = supabase
+      const { data, error } = await supabase
         .from('active_items')
         .select(
           `
@@ -181,17 +215,17 @@ export default {
         )
         .order('item_no', { ascending: true })
 
-      // Apply filter if selected
-      if (this.selectedRecipient) {
-        query = query.eq('indiv_txn_id', this.selectedRecipient)
+      if (error) {
+        console.error('Error fetching items:', error)
+        return
       }
 
-      const { data, error } = await query
+      // Save fetched items
+      this.itemsWithPO = data || []
 
-      if (error) return console.error(error)
-      this.itemsWithPO = data
+      console.log('Fetched itemsWithPO:', this.itemsWithPO)
+      this.generateAmountRanges()
     },
-
     // Fetch all departments
 
     async fetchDepartments() {
@@ -219,6 +253,34 @@ export default {
       this.recipients = data
     },
 
+    generateAmountRanges() {
+      if (!this.itemsWithPO || !this.itemsWithPO.length) return
+
+      const amounts = this.itemsWithPO
+        .map((item) => item.purchase_order?.total_amount || 0)
+        .filter((amount) => amount > 0)
+
+      if (!amounts.length) return
+
+      const minAmount = Math.floor(Math.min(...amounts) / 1000) * 1000 // round down
+      const maxAmount = Math.ceil(Math.max(...amounts) / 1000) * 1000 // round up
+      const step = 20000
+
+      const ranges = []
+      for (let start = minAmount; start <= maxAmount; start += step) {
+        const end = start + step - 1
+        ranges.push({
+          value: `${start}-${end}`,
+          label: `₱${start.toLocaleString()} - ₱${end.toLocaleString()}`,
+        })
+      }
+
+      this.amountRanges = ranges
+    },
+    clearAmountFilter() {
+      this.selectedAmountRange = ''
+    },
+
     calculateSummary() {
       this.totalItems = this.itemsWithPO.length
       this.totalPOs = this.itemsWithPO.filter((i) => i.purchase_order).length
@@ -229,8 +291,10 @@ export default {
     },
 
     exportCSV() {
-      if (!this.itemsWithPO.length) {
-        toast.info('No records found for this recipient.')
+      const dataToExport = this.filteredItems
+
+      if (!dataToExport.length) {
+        toast.info('No records found for this recipient or filter.')
         return
       }
 
@@ -240,31 +304,31 @@ export default {
 
       const headers = [
         'Item Name',
+        'Purchase Order Number',
         'Property No',
         'Location',
         'Department',
         'Status',
         'Serial No',
         'Model/Brand',
-        'Recipient Name',
         'Supplier',
-        'PO No',
+        'Accountable Officer',
         'Total Amount',
         'Item Acquired',
         'Order Date',
       ]
 
-      const rows = this.itemsWithPO.map((item) => [
+      const rows = dataToExport.map((item) => [
         item.name,
+        item.purchase_order?.purchase_order_number || '',
         item.property_no,
         item.location,
         item.department?.dept_name || 'N/A',
         item.action?.action_name || 'Unknown',
         item.serial_no,
         item.model_brand,
-        item.individual_transaction?.recipient_name || 'N/A',
         item.purchase_order?.supplier || '',
-        item.purchase_order?.po_no || '',
+        item.individual_transaction?.recipient_name || 'N/A',
         item.purchase_order?.total_amount || '',
         item.date_acquired,
         item.purchase_order?.order_date || '',
@@ -590,5 +654,16 @@ p {
   outline: none;
   border-color: #495aff;
   box-shadow: 0 0 4px rgba(73, 90, 255, 0.4);
+}
+
+.nothing-follows-row {
+  background-color: #f9f9f9;
+  font-weight: 600;
+  color: #666;
+}
+
+.no-data-row {
+  background-color: #fafafa;
+  font-size: 16px;
 }
 </style>
