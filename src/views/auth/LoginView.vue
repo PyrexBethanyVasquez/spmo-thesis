@@ -65,7 +65,7 @@
 
       <!-- Footer -->
       <div class="admin-footer">
-        <p class="small-text">© 2025 SPMO Admin Dashboard</p>
+        <p class="small-text">© 2026 SPMO Admin Dashboard</p>
       </div>
     </div>
   </div>

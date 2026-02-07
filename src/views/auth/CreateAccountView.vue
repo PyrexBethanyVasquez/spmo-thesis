@@ -54,9 +54,13 @@
             @click="showConfirmPassword = !showConfirmPassword"
           ></ion-icon>
         </div>
-        <!-- Error message below password field -->
         <p v-if="confirmPasswordError" class="error-msg">{{ confirmPasswordError }}</p>
-        <button type="submit" class="btn-submit">Create Account</button>
+
+        <!-- Disable button while creating -->
+        <button type="submit" class="btn-submit" :disabled="isCreating">
+          {{ isCreating ? 'Creating...' : 'Create Account' }}
+        </button>
+
         <p v-if="successMessage" class="success-msg">{{ successMessage }}</p>
       </form>
     </div>
@@ -84,16 +88,17 @@ let showConfirmPassword = ref(false)
 let passwordError = ref('')
 let confirmPasswordError = ref('')
 let successMessage = ref('')
+let isCreating = ref(false) // ✅ Add this
+
 const isPasswordValid = computed(() => {
-  // Password must include at least one uppercase, one number, and one special character
   const regex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,20}$/
   return regex.test(password.value)
 })
+
 const passwordsMatch = computed(() => {
   return password.value && confirmPassword.value && password.value === confirmPassword.value
 })
 
-// Fetch current user's role
 onMounted(async () => {
   const { data, error } = await supabase.auth.getUser()
 
@@ -121,6 +126,12 @@ onMounted(async () => {
 })
 
 async function createaccount() {
+  // ✅ Prevent multiple submissions
+  if (isCreating.value) {
+    console.log('⚠️ Already creating account, ignoring duplicate submission')
+    return
+  }
+
   passwordError.value = ''
   confirmPasswordError.value = ''
   successMessage.value = ''
@@ -151,16 +162,22 @@ async function createaccount() {
     return
   }
 
-  // Get current admin session token
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-  if (sessionError || !sessionData.session) {
-    toast.error('Unable to get session:', sessionError?.message)
-    return
-  }
-  const token = sessionData.session.access_token
+  // ✅ Set creating state
+  isCreating.value = true
 
-  // Call the Edge Function
   try {
+    // Get current admin session token
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError || !sessionData.session) {
+      toast.error('Unable to get session: ' + sessionError?.message)
+      return
+    }
+    const token = sessionData.session.access_token
+
+    // ✅ Add logging
+    console.log('🔥 Making API call to create user:', email.value)
+
+    // Call the Edge Function
     const res = await fetch('https://hogtogfgaayfcaunjmyv.supabase.co/functions/v1/quick-handler', {
       method: 'POST',
       headers: {
@@ -175,24 +192,36 @@ async function createaccount() {
     })
 
     const result = await res.json()
+    console.log('📬 API Response:', result)
 
     if (!res.ok) {
-      console.error('Error creating user:', result.error)
+      console.error('❌ Error creating user:', result.error)
+      toast.error('Error: ' + result.error)
       passwordError.value = result.error
       return
     }
 
     toast.success('Account created successfully!')
+
+    // Reset form
+    email.value = ''
+    password.value = ''
+    confirmPassword.value = ''
+    name.value = ''
+
     setTimeout(() => {
       router.push('/home')
     }, 1500)
   } catch (err) {
-    console.error('Unexpected error:', err)
+    console.error('💥 Unexpected error:', err)
+    toast.error('Unexpected error occurred: ' + err.message)
     passwordError.value = 'Unexpected error occurred.'
+  } finally {
+    // ✅ Always reset creating state
+    isCreating.value = false
   }
 }
 </script>
-
 <style scoped>
 .success-icon {
   position: absolute;
