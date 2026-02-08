@@ -199,7 +199,7 @@ watch(searchQuery, (newVal) => {
 })
 
 async function fetchTotalItems() {
-  const { count } = await supabase.from('items').select('*', { count: 'exact', head: true })
+  const { count } = await supabase.from('active_items').select('*', { count: 'exact', head: true })
   totalItems.value = count || 0
 }
 
@@ -309,7 +309,7 @@ async function fetchConditions() {
 
 async function fetchItemsWithPO() {
   const { data, error } = await supabase
-    .from('items')
+    .from('active_items')
     .select(
       `
       *,
@@ -326,9 +326,8 @@ async function fetchItemsWithPO() {
   }
 
   itemsWithPO.value = data
-  // ✅ Calculate total purchase order amount
+  // Calculate total purchase order amount
   const totalAmount = data.reduce((sum, item) => {
-    // Ensure purchase_order and amount exist
     const amount = item.purchase_order?.total_amount || 0
     return sum + amount
   }, 0)
@@ -362,7 +361,7 @@ async function fetchRecentTransactions() {
   const actIds = transactions.map((t) => t.action_id).filter(Boolean)
   const recipID = transactions.map((t) => t.indiv_txn_id).filter(Boolean)
 
-  // 2️⃣ Fetch items
+  // Fetch items
   let items = []
   if (itemNos.length > 0) {
     const { data, error } = await supabase
@@ -373,7 +372,7 @@ async function fetchRecentTransactions() {
     items = data || []
   }
 
-  // 3️⃣ Fetch users from your Deno endpoint instead of Supabase table
+  // Fetch users from your Deno endpoint instead of Supabase table
   let users = []
   try {
     const tokenRes = await supabase.auth.getSession()
@@ -397,7 +396,7 @@ async function fetchRecentTransactions() {
     console.error('Failed getting users from Deno endpoint:', err)
   }
 
-  // 4️⃣ Fetch recipient names
+  // Fetch recipient names
   let recipient = []
   if (recipID.length > 0) {
     const { data, error } = await supabase
@@ -408,7 +407,7 @@ async function fetchRecentTransactions() {
     recipient = data || []
   }
 
-  // 5️⃣ Fetch departments
+  // Fetch departments
   let departments = []
   if (deptIds.length > 0) {
     const { data, error } = await supabase
@@ -419,7 +418,7 @@ async function fetchRecentTransactions() {
     departments = data || []
   }
 
-  // 6️⃣ Fetch actions
+  // Fetch actions
   let actions = []
   const { data: actData, error: actError } = await supabase
     .from('action')
@@ -429,14 +428,14 @@ async function fetchRecentTransactions() {
   if (actError) console.error('Error fetching actions:', actError.message)
   actions = actData || []
 
-  // 7️⃣ Maps
+  // Maps
   const itemMap = Object.fromEntries(items.map((i) => [i.item_no, i]))
-  const userMap = Object.fromEntries(users.map((u) => [u.id, u.full_name])) // 🔥 Using Deno users endpoint
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u.full_name])) // from  Deno users endpoint
   const deptMap = Object.fromEntries(departments.map((d) => [d.dept_id, d.dept_name]))
   const actionMap = Object.fromEntries(actions.map((a) => [a.action_id, a.action_name]))
   const recipientMap = Object.fromEntries(recipient.map((r) => [r.indiv_txn_id, r.recipient_name]))
 
-  // 8️⃣ Build output
+  // Build output
   recentTransactions.value = transactions.map((t) => {
     const item = itemMap[t.item_no]
     return {
@@ -515,7 +514,7 @@ async function renderTransactionChart() {
   // Group transactions by date
   const dateCounts = {}
   transactions.forEach((txn) => {
-    const date = new Date(txn.date).toLocaleDateString() // e.g., "10/18/2025"
+    const date = new Date(txn.date).toLocaleDateString() // sample ni "10/18/2025"
     dateCounts[date] = (dateCounts[date] || 0) + 1
   })
 
@@ -594,9 +593,8 @@ async function fetchTodayTransactions() {
 }
 
 async function fetchDamagedItems() {
-  // Replace 'For Disposal' with the exact condition_name in your database
   const { count, error } = await supabase
-    .from('items')
+    .from('active_items')
     .select('*', { count: 'exact', head: true })
     .eq('condition_id', 2)
 
@@ -610,7 +608,7 @@ async function fetchDamagedItems() {
 }
 
 async function fetchTaggedItems() {
-  const { data, error } = await supabase.from('items').select('status')
+  const { data, error } = await supabase.from('active_items').select('status')
 
   if (error) {
     console.error('Error fetching tagged items:', error.message)

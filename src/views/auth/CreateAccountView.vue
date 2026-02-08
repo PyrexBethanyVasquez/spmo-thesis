@@ -69,6 +69,86 @@
   <div v-else class="unauthorized">
     <p>{{ unauthorizedMessage }}</p>
   </div>
+
+  <!-- Credentials Modal -->
+  <transition name="modal-fade">
+    <div v-if="showCredentialsModal" class="modal-overlay" @click.self="closeCredentialsModal">
+      <div class="credentials-modal">
+        <div class="modal-header">
+          <div class="success-icon-wrapper">
+            <ion-icon name="checkmark-circle"></ion-icon>
+          </div>
+          <h3>Account Created Successfully!</h3>
+          <p class="subtitle">Share these credentials with the new user</p>
+        </div>
+
+        <div class="modal-body">
+          <div class="credentials-section">
+            <div class="credential-item">
+              <label>
+                <ion-icon name="person-outline"></ion-icon>
+                Full Name
+              </label>
+              <div class="credential-value">
+                <input type="text" :value="createdUser.name" readonly />
+                <button @click="copyToClipboard(createdUser.name, 'Name')" class="copy-btn">
+                  <ion-icon name="copy-outline"></ion-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="credential-item">
+              <label>
+                <ion-icon name="mail-outline"></ion-icon>
+                Email Address
+              </label>
+              <div class="credential-value">
+                <input type="text" :value="createdUser.email" readonly />
+                <button @click="copyToClipboard(createdUser.email, 'Email')" class="copy-btn">
+                  <ion-icon name="copy-outline"></ion-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="credential-item">
+              <label>
+                <ion-icon name="lock-closed-outline"></ion-icon>
+                Temporary Password
+              </label>
+              <div class="credential-value">
+                <input type="text" :value="createdUser.password" readonly />
+                <button @click="copyToClipboard(createdUser.password, 'Password')" class="copy-btn">
+                  <ion-icon name="copy-outline"></ion-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="copy-all-section">
+            <button @click="copyAllCredentials" class="copy-all-btn">
+              <ion-icon name="clipboard-outline"></ion-icon>
+              Copy All Credentials
+            </button>
+          </div>
+
+          <div class="info-banner">
+            <ion-icon name="information-circle-outline"></ion-icon>
+            <div>
+              <strong>Important:</strong> The user must change their password on first login for
+              security.
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button @click="closeCredentialsModal" class="btn-done">
+            <ion-icon name="checkmark-outline"></ion-icon>
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <script setup>
@@ -88,7 +168,13 @@ let showConfirmPassword = ref(false)
 let passwordError = ref('')
 let confirmPasswordError = ref('')
 let successMessage = ref('')
-let isCreating = ref(false) // ✅ Add this
+let isCreating = ref(false)
+let showCredentialsModal = ref(false)
+let createdUser = ref({
+  name: '',
+  email: '',
+  password: '',
+})
 
 const isPasswordValid = computed(() => {
   const regex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,20}$/
@@ -126,7 +212,6 @@ onMounted(async () => {
 })
 
 async function createaccount() {
-  // ✅ Prevent multiple submissions
   if (isCreating.value) {
     console.log('⚠️ Already creating account, ignoring duplicate submission')
     return
@@ -136,7 +221,6 @@ async function createaccount() {
   confirmPasswordError.value = ''
   successMessage.value = ''
 
-  // Only admin can create users
   if (role.value !== 'admin') {
     console.log('Unauthorized attempt to create account')
     return
@@ -162,11 +246,9 @@ async function createaccount() {
     return
   }
 
-  // ✅ Set creating state
   isCreating.value = true
 
   try {
-    // Get current admin session token
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     if (sessionError || !sessionData.session) {
       toast.error('Unable to get session: ' + sessionError?.message)
@@ -174,10 +256,8 @@ async function createaccount() {
     }
     const token = sessionData.session.access_token
 
-    // ✅ Add logging
     console.log('🔥 Making API call to create user:', email.value)
 
-    // Call the Edge Function
     const res = await fetch('https://hogtogfgaayfcaunjmyv.supabase.co/functions/v1/quick-handler', {
       method: 'POST',
       headers: {
@@ -201,6 +281,14 @@ async function createaccount() {
       return
     }
 
+    // ✅ Store credentials and show modal
+    createdUser.value = {
+      name: name.value,
+      email: email.value,
+      password: password.value,
+    }
+
+    showCredentialsModal.value = true
     toast.success('Account created successfully!')
 
     // Reset form
@@ -208,18 +296,53 @@ async function createaccount() {
     password.value = ''
     confirmPassword.value = ''
     name.value = ''
-
-    setTimeout(() => {
-      router.push('/home')
-    }, 1500)
   } catch (err) {
     console.error('💥 Unexpected error:', err)
     toast.error('Unexpected error occurred: ' + err.message)
     passwordError.value = 'Unexpected error occurred.'
   } finally {
-    // ✅ Always reset creating state
     isCreating.value = false
   }
+}
+
+function copyToClipboard(text, label) {
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      toast.success(`${label} copied to clipboard!`)
+    })
+    .catch((err) => {
+      console.error('Failed to copy:', err)
+      toast.error('Failed to copy to clipboard')
+    })
+}
+
+function copyAllCredentials() {
+  const credentials = `
+Account Credentials
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Name: ${createdUser.value.name}
+Email: ${createdUser.value.email}
+Password: ${createdUser.value.password}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ IMPORTANT: Change password on first login
+  `.trim()
+
+  navigator.clipboard
+    .writeText(credentials)
+    .then(() => {
+      toast.success('All credentials copied to clipboard!')
+    })
+    .catch((err) => {
+      console.error('Failed to copy:', err)
+      toast.error('Failed to copy to clipboard')
+    })
+}
+
+function closeCredentialsModal() {
+  showCredentialsModal.value = false
+  router.push('/home')
 }
 </script>
 <style scoped>
@@ -361,5 +484,243 @@ async function createaccount() {
   font-size: 0.85rem; /* smaller text */
   margin-top: 0.1rem; /* space below input */
   text-align: left; /* align left */
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.credentials-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-width: 550px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  text-align: center;
+  padding: 32px 24px 24px;
+  background: linear-gradient(to bottom, #f0fdf4, #ffffff);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.success-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  background: #dcfce7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.success-icon-wrapper ion-icon {
+  font-size: 36px;
+  color: #16a34a;
+}
+
+.modal-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modal-header .subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.credentials-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.credential-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.credential-item label ion-icon {
+  font-size: 18px;
+  color: #3b82f6;
+}
+
+.credential-value {
+  display: flex;
+  gap: 8px;
+}
+
+.credential-value input {
+  flex: 1;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #111827;
+  font-family: 'Courier New', monospace;
+}
+
+.copy-btn {
+  padding: 12px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copy-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.copy-btn ion-icon {
+  font-size: 20px;
+}
+
+.copy-all-section {
+  margin-bottom: 20px;
+}
+
+.copy-all-btn {
+  width: 100%;
+  padding: 14px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.copy-all-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.copy-all-btn ion-icon {
+  font-size: 20px;
+}
+
+.info-banner {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #78350f;
+}
+
+.info-banner ion-icon {
+  font-size: 20px;
+  color: #f59e0b;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-done:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-done ion-icon {
+  font-size: 20px;
+}
+
+/* Animation */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter-active .credentials-modal,
+.modal-fade-leave-active .credentials-modal {
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-enter-from .credentials-modal,
+.modal-fade-leave-to .credentials-modal {
+  transform: scale(0.9);
+  opacity: 0;
 }
 </style>

@@ -431,9 +431,8 @@ onMounted(async () => {
                         <th>Department</th>
                         <th>Status</th>
                         <th>Accountable Officer</th>
-                        <th>User</th>
+                        <th>Added by</th>
                         <th>Date</th>
-                        <th>Notes</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -448,7 +447,6 @@ onMounted(async () => {
                         <td>{{ txn.individual_transaction?.recipient_name || 'N/A' }}</td>
                         <td>{{ txn.user?.full_name || 'N/A' }}</td>
                         <td>{{ new Date(txn.date).toLocaleString() }}</td>
-                        <td>{{ txn.notes || 'N/A' }}</td>
                       </tr>
                     </tbody>
                   </table>

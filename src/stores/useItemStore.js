@@ -39,7 +39,7 @@ export const useItemStore = defineStore('items', {
 
     async searchItems(query) {
       const { data, error } = await supabase
-        .from('items')
+        .from('active_items')
         .select(
           `
       *,
