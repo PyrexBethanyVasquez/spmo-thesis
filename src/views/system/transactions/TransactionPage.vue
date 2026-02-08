@@ -191,7 +191,7 @@
                             </div>
                             <div class="info-row" v-if="selectedTransaction?.recipient_name">
                               <ion-icon name="person-outline"></ion-icon>
-                              <span class="info-label">Recipient:</span>
+                              <span class="info-label">Accountable Officer:</span>
                               <span class="info-value">{{
                                 selectedTransaction.recipient_name
                               }}</span>
