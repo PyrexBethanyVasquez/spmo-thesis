@@ -38,7 +38,7 @@ export function useItems() {
     'Model/Brand',
     'Date Acquired',
     'Item Condition',
-    'Receiver',
+    'Accountable Officer',
     'Purchase Order',
     'Item Sticker',
     'Actions',

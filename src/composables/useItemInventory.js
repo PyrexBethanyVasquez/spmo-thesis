@@ -52,6 +52,7 @@ export function useItemInventory() {
     condition_id: '',
     dept_id: '',
     indiv_txn_id: '',
+    received_by: '',
   })
 
   const newReceipient = ref({
@@ -223,6 +224,7 @@ export function useItemInventory() {
       condition_id: newItem.value.condition_id || null,
       dept_id: newItem.value.dept_id || null,
       indiv_txn_id: newItem.value.indiv_txn_id || null,
+      received_by: newItem.value.received_by || null,
     }
 
     const { data: itemData, error: itemError } = await supabase
@@ -252,6 +254,7 @@ export function useItemInventory() {
       indiv_txn_id: cleanItem.indiv_txn_id,
       user_id: user?.id || null,
       date: new Date().toISOString(),
+      received_by: cleanItem.received_by,
     }
 
     const { error: txnError } = await supabase.from('transaction').insert([transaction])
@@ -426,6 +429,7 @@ export function useItemInventory() {
         dept_id: editingItem.value.dept_id,
         activity: 'update',
         indiv_txn_id: editingItem.value.indiv_txn_id,
+        received_by: editingItem.value.received_by || null,
         user_id: user?.id || null,
         date: new Date().toISOString(),
         po_no: editingItem.value.po_no,
