@@ -142,6 +142,19 @@
             </select>
           </div>
         </div>
+
+        <div class="recipient-section">
+          <label for="received_by">Received By</label>
+          <div class="recipient-inputs">
+            <input
+              type="text"
+              id="received_by"
+              v-model="newItem.received_by"
+              placeholder="Enter receiver name"
+              required
+            />
+          </div>
+        </div>
       </div>
 
       <!-- Form Actions -->

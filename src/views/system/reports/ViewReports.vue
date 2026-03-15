@@ -41,21 +41,52 @@
         </div>
       </transition>
 
-      <!-- Recipient Filter -->
-      <div class="filter-box">
-        <label>Sort Amount:</label>
-        <select v-model="selectedAmountRange">
-          <option value="">All Amounts</option>
-          <option v-for="range in amountRanges" :key="range.value" :value="range.value">
-            {{ range.label }}
-          </option>
-        </select>
+      <div class="filter-bar">
+        <div class="segment">
+          <button
+            :class="['seg-btn', selectedFilterMode === 'amount' && 'active']"
+            @click="selectedFilterMode = 'amount'"
+          >
+            By amount
+          </button>
+          <button
+            :class="['seg-btn', selectedFilterMode === 'receiver' && 'active']"
+            @click="selectedFilterMode = 'receiver'"
+          >
+            By receiver
+          </button>
+        </div>
+
+        <div class="divider" />
+
+        <div v-if="selectedFilterMode === 'amount'" class="sel-wrap">
+          <select v-model="selectedAmountRange">
+            <option value="">All amounts</option>
+            <option v-for="r in amountRanges" :key="r.value" :value="r.value">{{ r.label }}</option>
+          </select>
+          <span class="arrow">▾</span>
+        </div>
+
+        <div v-if="selectedFilterMode === 'receiver'" class="sel-wrap">
+          <select v-model="selectedReceiver">
+            <option value="">All receivers</option>
+            <option v-for="r in uniqueReceivers" :key="r" :value="r">{{ r }}</option>
+          </select>
+          <span class="arrow">▾</span>
+        </div>
+
+        <div class="spacer" />
+
+        <div :class="['refresh-pill', autoRefresh && 'active']" @click="toggleAutoRefresh">
+          <span class="dot" />
+          <span>{{ refreshLabel }}</span>
+        </div>
 
         <button class="export-btn" @click="exportCSV">
-          <ion-icon name="download-outline"></ion-icon> Export CSV
+          <ion-icon name="download-outline" />
+          Export CSV
         </button>
       </div>
-
       <hr />
       <br />
 
@@ -95,7 +126,7 @@
                 <th>Model / Brand</th>
                 <th>Supplier</th>
                 <th>Accountable Officer</th>
-
+                <th>Received By</th>
                 <th>Total Amount</th>
                 <th>Date Acquired</th>
                 <th>Order Date</th>
@@ -115,6 +146,9 @@
                 <td>
                   {{ item.individual_transaction?.recipient_name || 'N/A' }}
                 </td>
+                <td>
+                  {{ item.received_by || 'N/A' }}
+                </td>
 
                 <td>
                   {{
@@ -125,7 +159,7 @@
                 <td>{{ item.purchase_order?.order_date || '-' }}</td>
               </tr>
               <tr v-if="filteredItems.length > 0" class="nothing-follows-row">
-                <td colspan="13" style="text-align: center; font-style: italic; padding: 20px">
+                <td colspan="14" style="text-align: center; font-style: italic; padding: 20px">
                   *** NOTHING FOLLOWS ***
                 </td>
               </tr>
@@ -157,47 +191,72 @@ export default {
       totalItems: 0,
       totalPOs: 0,
       totalSuppliers: 0,
-      selectedAmountRange: '',
+
       amountRanges: [],
+      selectedAmountRange: '',
       departments: [],
       recipients: [],
       selectedRecipient: '',
+      selectedReceiver: '',
       loading: true,
+      selectedFilterMode: 'amount',
+      autoRefresh: true,
+      countdown: 30,
+      refreshTimer: null,
     }
   },
+
   computed: {
     filteredItems() {
-      // fallback if items not loaded
-      if (!this.itemsWithPO || !this.itemsWithPO.length) return []
+      if (!this.itemsWithPO?.length) return []
 
-      // If no amount range selected, show all items
-      if (!this.selectedAmountRange) return this.itemsWithPO
+      let filtered = this.itemsWithPO
 
-      // Parse min and max from selectedAmountRange
-      const [min, max] = this.selectedAmountRange.split('-').map(Number)
+      if (this.selectedFilterMode === 'amount' && this.selectedAmountRange) {
+        const [min, max] = this.selectedAmountRange.split('-').map(Number)
+        filtered = filtered.filter((item) => {
+          const amount = Number(
+            (item.purchase_order?.total_amount || '0').toString().replace(/,/g, ''),
+          )
+          return amount >= min && amount <= max
+        })
+      } else if (this.selectedFilterMode === 'receiver' && this.selectedReceiver) {
+        filtered = filtered.filter((item) => item.received_by === this.selectedReceiver)
+      }
 
-      // If parsing failed, show all items
-      if (isNaN(min) || isNaN(max)) return this.itemsWithPO
+      return filtered
+    },
 
-      // Filter items based on total_amount
-      return this.itemsWithPO.filter((item) => {
-        const amount = item.purchase_order?.total_amount || 0
-        return amount >= min && amount <= max
-      })
+    uniqueReceivers() {
+      if (!this.itemsWithPO?.length) return []
+      const receivers = this.itemsWithPO
+        .map((item) => item.received_by)
+        .filter((r) => r && r.trim() !== '')
+      return [...new Set(receivers)]
+    },
+
+    refreshLabel() {
+      if (!this.autoRefresh) return 'Auto-refresh off'
+      return this.countdown <= 5 ? `Refreshing in ${this.countdown}s…` : `Live · ${this.countdown}s`
     },
   },
 
-  mounted() {
+  async mounted() {
     try {
       this.loading = true
+      this.startRefreshTimer()
 
-      Promise.all([this.fetchDepartments(), this.fetchRecipient(), this.fetchItems()]).then(
-        () => this.calculateSummary(),
-        this.generateAmountRanges(), // new
-      )
+      await Promise.all([this.fetchDepartments(), this.fetchRecipient(), this.fetchItems()])
+
+      this.calculateSummary()
+      this.generateAmountRanges()
     } finally {
       this.loading = false
     }
+  },
+
+  beforeUnmount() {
+    clearInterval(this.refreshTimer)
   },
 
   methods: {
@@ -206,27 +265,24 @@ export default {
         .from('active_items')
         .select(
           `
-      *,
-      purchase_order:purchase_order!inner(*),
-      action:status(action_id, action_name),
-      department:dept_id(dept_name),
-      individual_transaction:indiv_txn_id(recipient_name)
-    `,
+          *,
+          purchase_order:purchase_order!inner(*),
+          action:status(action_id, action_name),
+          department:dept_id(dept_name),
+          individual_transaction:indiv_txn_id(recipient_name),
+          received_by
+          `,
         )
         .order('item_no', { ascending: true })
 
       if (error) {
         console.error('Error fetching items:', error)
+        toast.error('Error fetching items: ' + error.message)
         return
       }
 
-      // Save fetched items
       this.itemsWithPO = data || []
-
-      console.log('Fetched itemsWithPO:', this.itemsWithPO)
-      this.generateAmountRanges()
     },
-    // Fetch all departments
 
     async fetchDepartments() {
       const { data, error } = await supabase.from('department').select('*').order('dept_name')
@@ -254,39 +310,43 @@ export default {
     },
 
     generateAmountRanges() {
-      if (!this.itemsWithPO || !this.itemsWithPO.length) return
-
-      const amounts = this.itemsWithPO
-        .map((item) => item.purchase_order?.total_amount || 0)
-        .filter((amount) => amount > 0)
-
-      if (!amounts.length) return
-
-      const minAmount = Math.floor(Math.min(...amounts) / 1000) * 1000 // round down
-      const maxAmount = Math.ceil(Math.max(...amounts) / 1000) * 1000 // round up
-      const step = 20000
-
-      const ranges = []
-      for (let start = minAmount; start <= maxAmount; start += step) {
-        const end = start + step - 1
-        ranges.push({
-          value: `${start}-${end}`,
-          label: `₱${start.toLocaleString()} - ₱${end.toLocaleString()}`,
-        })
-      }
-
-      this.amountRanges = ranges
+      this.amountRanges = [
+        { value: '0-5000', label: '0 - 5,000 ( LV )' },
+        { value: '5001-50000', label: '5,001 - 50,000 ( HV )' },
+        { value: '50001-999999999', label: '50,001 - up ( PAR )' },
+      ]
     },
-    clearAmountFilter() {
+
+    startRefreshTimer() {
+      this.refreshTimer = setInterval(async () => {
+        this.countdown--
+        if (this.countdown <= 0) {
+          await this.fetchItems()
+          this.calculateSummary()
+          this.countdown = 30
+        }
+      }, 1000)
+    },
+
+    toggleAutoRefresh() {
+      this.autoRefresh = !this.autoRefresh
+      if (this.autoRefresh) {
+        this.countdown = 30
+        this.startRefreshTimer()
+      } else {
+        clearInterval(this.refreshTimer)
+      }
+    },
+
+    clearFilters() {
       this.selectedAmountRange = ''
+      this.selectedReceiver = ''
     },
 
     calculateSummary() {
       this.totalItems = this.itemsWithPO.length
       this.totalPOs = this.itemsWithPO.filter((i) => i.purchase_order).length
-
       const suppliers = this.itemsWithPO.map((i) => i.purchase_order?.supplier).filter(Boolean)
-
       this.totalSuppliers = [...new Set(suppliers)].length
     },
 
@@ -294,7 +354,7 @@ export default {
       const dataToExport = this.filteredItems
 
       if (!dataToExport.length) {
-        toast.info('No records found for this recipient or filter.')
+        toast.info('No records found for this filter.')
         return
       }
 
@@ -313,6 +373,7 @@ export default {
         'Model/Brand',
         'Supplier',
         'Accountable Officer',
+        'Received By',
         'Total Amount',
         'Item Acquired',
         'Order Date',
@@ -329,6 +390,7 @@ export default {
         item.model_brand,
         item.purchase_order?.supplier || '',
         item.individual_transaction?.recipient_name || 'N/A',
+        item.received_by || 'N/A',
         item.purchase_order?.total_amount || '',
         item.date_acquired,
         item.purchase_order?.order_date || '',
@@ -665,5 +727,161 @@ p {
 .no-data-row {
   background-color: #fafafa;
   font-size: 16px;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.segment {
+  display: flex;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.seg-btn {
+  background: transparent;
+  border: none;
+  border-right: 1px solid #e5e7eb;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.seg-btn:last-child {
+  border-right: none;
+}
+
+.seg-btn.active {
+  background: #f3f4f6;
+  color: #111827;
+  font-weight: 500;
+}
+
+.divider {
+  width: 1px;
+  height: 28px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+
+.sel-wrap {
+  position: relative;
+}
+
+.sel-wrap select {
+  appearance: none;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  padding: 6px 32px 6px 10px;
+  font-size: 13px;
+  color: #111827;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.sel-wrap select:focus {
+  outline: none;
+  border-color: #6b7280;
+}
+
+.sel-wrap .arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #017d2b;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.export-btn:hover {
+  background: #013c0a;
+}
+
+@media (max-width: 600px) {
+  .filter-bar {
+    gap: 8px;
+  }
+  .spacer {
+    display: none;
+  }
+  .export-btn {
+    margin-left: auto;
+  }
+}
+
+.refresh-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  padding: 4px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 99px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.refresh-pill:hover {
+  background: #f3f4f6;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9ca3af;
+  flex-shrink: 0;
+  transition:
+    background 0.3s,
+    transform 0.2s;
+}
+
+.refresh-pill.active .dot {
+  background: #3b9e6e;
+}
+
+.refresh-pill.active {
+  border-color: #d1fae5;
+  color: #065f46;
+}
+
+.refresh-pill.active:hover {
+  background: #ecfdf5;
 }
 </style>

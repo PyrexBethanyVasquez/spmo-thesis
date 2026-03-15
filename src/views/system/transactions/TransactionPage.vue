@@ -62,8 +62,9 @@
               <th>Serial Number</th>
               <th>Brand</th>
 
-              <th>Received by</th>
+              <th>Accountable Officer</th>
               <th>Purchase Order</th>
+              <th>Received By</th>
               <th>Created_at</th>
               <th>Remarks</th>
             </tr>
@@ -93,12 +94,15 @@
               <td>{{ txn.model_brand }}</td>
 
               <td>{{ txn.recipient_name }}</td>
+
               <td>
                 <button v-if="txn.po_no" class="po-btn" @click="openPOModal(txn)">
                   {{ txn.purchase_order_number }}
                 </button>
                 <span v-else>-</span>
               </td>
+              <td>{{ txn.received_by }}</td>
+
               <td>{{ new Date(txn.date).toLocaleString() }}</td>
 
               <td>
@@ -280,13 +284,15 @@ export default {
   },
   computed: {
     filteredTransactions() {
+      const searchLower = this.searchQuery?.toLowerCase() || ''
       return this.transactions.filter((txn) => {
         const matchesSearch =
-          !this.searchQuery ||
-          txn.item_no?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          txn.item_name?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          txn.dept_name?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          (txn.user_name || '').toLowerCase().includes(this.searchQuery.toLowerCase())
+          !searchLower ||
+          txn.item_no?.toLowerCase().includes(searchLower) ||
+          txn.item_name?.toLowerCase().includes(searchLower) ||
+          txn.dept_name?.toLowerCase().includes(searchLower) ||
+          (txn.user_name || '').toLowerCase().includes(searchLower) ||
+          (txn.received_by || '').toLowerCase().includes(searchLower) // ✅ added
 
         const matchesStatus = !this.filterStatus || txn.status_id === Number(this.filterStatus)
         const txnDate = new Date(txn.date)
@@ -317,7 +323,7 @@ export default {
           `
           txn_id,
           date,
-          item:item_no(name, item_no, serial_no, model_brand, location),
+          item:item_no(name, item_no, serial_no, model_brand, location, received_by),
           purchase_order:po_no (
             po_no,
             purchase_order_number,
@@ -378,6 +384,7 @@ export default {
           serial_no: txn.item?.serial_no || '-',
           model_brand: txn.item?.model_brand || '-',
           location: txn.item?.location || '-',
+          received_by: txn.item?.received_by || '-',
           dept_name: txn.department?.dept_name || 'N/A',
           recipient_name: txn.individual_transaction?.recipient_name || 'N/A',
           status_name: txn.action?.action_name || 'Unknown',
