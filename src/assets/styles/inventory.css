@@ -947,7 +947,6 @@ select option[disabled] {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex-wrap: wrap;
 }
 
 .recipient-inputs {
@@ -959,6 +958,7 @@ select option[disabled] {
 
 .recipient-inputs select {
   flex: 1;
+  min-width: 0;
   padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
